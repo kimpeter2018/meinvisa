@@ -1,0 +1,37 @@
+name: echad
+description: "A Flutter App for connecting church members and managing events."
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: ^3.9.2
+
+analyzer:
+  errors:
+    invalid_annotation_target: ignore
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^2.6.1
+  freezed_annotation: ^3.1.0
+  go_router: ^16.2.1
+  google_fonts: ^6.3.1
+  google_sign_in: ^7.1.1
+  json_annotation: ^4.9.0
+  riverpod: ^2.6.1
+  supabase_flutter: ^2.10.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  build_runner: ^2.8.0
+  freezed: ^3.2.3
+  json_serializable: ^6.11.1
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+
