@@ -5,18 +5,18 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "echad",
+            "name": "meinvisa",
             "request": "launch",
             "type": "dart"
         },
         {
-            "name": "echad (profile mode)",
+            "name": "meinvisa (profile mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "profile"
         },
         {
-            "name": "echad (release mode)",
+            "name": "meinvisa (release mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "release"

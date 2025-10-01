@@ -1,5 +1,5 @@
-import 'package:echad/core/utils/validators.dart';
-import 'package:echad/features/auth/view/signup_screen.dart';
+import 'package:meinvisa/core/utils/validators.dart';
+import 'package:meinvisa/features/auth/view/signup_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';

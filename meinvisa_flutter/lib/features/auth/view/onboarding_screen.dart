@@ -1,4 +1,4 @@
-import 'package:echad/features/auth/view/onboarding_examples.dart';
+import 'package:meinvisa/features/auth/view/onboarding_examples.dart';
 import 'package:flutter/material.dart';
 
 class OnboardingScreen extends StatefulWidget {

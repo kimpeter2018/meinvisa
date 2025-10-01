@@ -1,4 +1,4 @@
-import 'package:echad/features/auth/data/auth_repository.dart';
+import 'package:meinvisa/features/auth/data/auth_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 

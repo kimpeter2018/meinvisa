@@ -1,9 +1,9 @@
-import 'package:echad/features/app/auth_gate.dart';
-import 'package:echad/features/auth/view/email_confirmation_screen.dart';
-import 'package:echad/features/auth/view/login_screen.dart';
-import 'package:echad/features/auth/view/onboarding_screen.dart';
-import 'package:echad/features/auth/view/signup_screen.dart';
-import 'package:echad/features/home/view/home_screen.dart';
+import 'package:meinvisa/features/app/auth_gate.dart';
+import 'package:meinvisa/features/auth/view/email_confirmation_screen.dart';
+import 'package:meinvisa/features/auth/view/login_screen.dart';
+import 'package:meinvisa/features/auth/view/onboarding_screen.dart';
+import 'package:meinvisa/features/auth/view/signup_screen.dart';
+import 'package:meinvisa/features/home/view/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';

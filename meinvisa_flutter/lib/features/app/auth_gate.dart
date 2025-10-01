@@ -1,7 +1,7 @@
-import 'package:echad/core/providers/user_provider.dart';
-import 'package:echad/features/auth/view/login_screen.dart';
-import 'package:echad/features/auth/view/onboarding_screen.dart';
-import 'package:echad/features/home/view/home_screen.dart';
+import 'package:meinvisa/core/providers/user_provider.dart';
+import 'package:meinvisa/features/auth/view/login_screen.dart';
+import 'package:meinvisa/features/auth/view/onboarding_screen.dart';
+import 'package:meinvisa/features/home/view/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

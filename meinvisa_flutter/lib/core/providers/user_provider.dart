@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:echad/core/models/user_model.dart';
-import 'package:echad/core/providers/auth_provider.dart';
+import 'package:meinvisa/core/models/user_model.dart';
+import 'package:meinvisa/core/providers/auth_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 

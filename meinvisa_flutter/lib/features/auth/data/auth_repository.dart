@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:echad/core/models/user_model.dart';
+import 'package:meinvisa/core/models/user_model.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -60,7 +60,7 @@ class AuthRepository {
     final response = await _client.auth.signUp(
       email: email,
       password: password,
-      emailRedirectTo: 'com.echad://auth-callback', // deep link
+      emailRedirectTo: 'com.meinvisa://auth-callback', // deep link
     );
 
     if (response.session == null) {

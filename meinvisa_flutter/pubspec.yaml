@@ -1,5 +1,5 @@
-name: echad
-description: "A Flutter App for connecting church members and managing events."
+name: MeinVisa
+description: "A Flutter App for managing visa applications."
 publish_to: 'none'
 version: 0.1.0
 
@@ -35,4 +35,6 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
+    - .env.local
+    - .env.prod
 

@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Echad</string>
+	<string>meinvisa</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -13,7 +13,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>echad</string>
+	<string>meinvisa</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -54,7 +54,7 @@
 	    <array>
 	      <!-- Copied from GoogleService-Info.plist key REVERSED_CLIENT_ID -->
 	      <string>com.googleusercontent.apps.1095073134659-p4scb9kfrt7bldjd8mk9d3gli1l9h621</string>
-		  <string>com.echad</string>
+		  <string>com.meinvisa</string>
 	    </array>
 	  </dict>
 	</array>

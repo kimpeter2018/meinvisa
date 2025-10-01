@@ -1,4 +1,4 @@
-package com.mavi.echad
+package com.mavi.meinvisa
 
 import io.flutter.embedding.android.FlutterActivity
 
