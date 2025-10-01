@@ -1,5 +1,6 @@
 import 'package:echad/features/app/app.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -7,10 +8,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  await dotenv.load(fileName: ".env");
+
   await Supabase.initialize(
-    url: "https://bodtgiisuipwoqzkxsks.supabase.co",
-    anonKey:
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJvZHRnaWlzdWlwd29xemt4c2tzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc0MjIyNjYsImV4cCI6MjA3Mjk5ODI2Nn0.sbzFGvASVyAAkdqY4AnB66bZBUMKXtCtgP2oi8UDSOc',
+    url: dotenv.env['SUPABASE_URL']!,
+    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
 
   await GoogleSignIn.instance.initialize(

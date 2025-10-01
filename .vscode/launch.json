@@ -1,0 +1,23 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "meinvisa_flutter (local)",
+            "cwd": "meinvisa_flutter",
+            "request": "launch",
+            "type": "dart",
+            "toolArgs": [
+                "--dart-define=ENV_FILE=.env.local"
+            ]
+        },
+        {
+            "name": "meinvisa_flutter (production)",
+            "cwd": "meinvisa_flutter",
+            "request": "launch",
+            "type": "dart",
+            "toolArgs": [
+                "--dart-define=ENV_FILE=.env.prod"
+            ]
+        }
+    ]
+}
