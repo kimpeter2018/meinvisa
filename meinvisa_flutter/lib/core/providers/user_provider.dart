@@ -18,7 +18,7 @@ final userProvider = StreamProvider<UserModel?>((ref) {
       controller.add(null);
       return;
     }
-
+    print("UserProvider: Current session user ID: ${session.user.id}");
     // fetch user data from your `users` table
     final response = await client
         .from('users')
@@ -27,6 +27,7 @@ final userProvider = StreamProvider<UserModel?>((ref) {
         .maybeSingle();
 
     if (response == null) {
+      print("UserProvider: No user data found in 'users' table.");
       controller.add(null); // not onboarded yet
     } else {
       controller.add(UserModel.fromJson(response));

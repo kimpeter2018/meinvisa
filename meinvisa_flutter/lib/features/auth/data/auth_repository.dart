@@ -50,6 +50,15 @@ class AuthRepository {
         idToken: idToken,
         accessToken: accessToken,
       );
+
+      // Check if user record exists in 'users' table
+      if (await userExists(_client.auth.currentUser!.id)) {
+        // First time sign-in, create user record
+        await createUserRecord(
+          _client.auth.currentUser!.userMetadata?['name'] ?? 'No Name',
+          _client.auth.currentUser!.userMetadata?['picture'] ?? '',
+        );
+      }
     } catch (e) {
       rethrow;
     }
@@ -60,7 +69,13 @@ class AuthRepository {
     final response = await _client.auth.signUp(
       email: email,
       password: password,
-      emailRedirectTo: 'com.meinvisa://auth-callback', // deep link
+      // emailRedirectTo: 'com.meinvisa://auth-callback', // deep link
+      emailRedirectTo: 'http://localhost:3000/email-confirmed',
+    );
+
+    await createUserRecord(
+      _client.auth.currentUser!.userMetadata?['name'] ?? 'No Name',
+      _client.auth.currentUser!.userMetadata?['picture'] ?? '',
     );
 
     if (response.session == null) {

@@ -1,7 +1,6 @@
 import 'package:meinvisa/features/app/auth_gate.dart';
 import 'package:meinvisa/features/auth/view/email_confirmation_screen.dart';
 import 'package:meinvisa/features/auth/view/login_screen.dart';
-import 'package:meinvisa/features/auth/view/onboarding_screen.dart';
 import 'package:meinvisa/features/auth/view/signup_screen.dart';
 import 'package:meinvisa/features/home/view/home_screen.dart';
 import 'package:flutter/material.dart';
@@ -25,10 +24,10 @@ final router = GoRouter(
     GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
     GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
     GoRoute(path: '/signup', builder: (context, state) => const SignupScreen()),
-    GoRoute(
-      path: '/onboarding',
-      builder: (context, state) => const OnboardingScreen(),
-    ),
+    // GoRoute(
+    //   path: '/onboarding',
+    //   builder: (context, state) => const OnboardingScreen(),
+    // ),
     GoRoute(
       path: '/email-confirmation',
       builder: (context, state) {
