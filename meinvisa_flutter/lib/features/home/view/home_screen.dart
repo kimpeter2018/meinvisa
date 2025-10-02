@@ -1,21 +1,34 @@
+import 'package:flutter/foundation.dart';
+import 'package:go_router/go_router.dart';
 import 'package:meinvisa/core/providers/auth_provider.dart';
 import 'package:meinvisa/core/providers/user_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  Future<void> signOut() async {
+    try {
+      await ref.read(authViewModelProvider.notifier).signOut();
+    } catch (e) {
+      if (kDebugMode) {
+        print(e.toString());
+      }
+    } finally {
+      if (mounted) context.go('/login');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final user = ref.read(userProvider).value;
-
-    // if (user != null) {
-    //   print('User email: ${user.email}');
-    // } else {
-    //   print('No user signed in');
-    // }
 
     return Scaffold(
       appBar: AppBar(
@@ -24,7 +37,7 @@ class HomeScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
-              await ref.read(authViewModelProvider.notifier).signOut();
+              signOut();
             },
             tooltip: "Sign Out",
           ),

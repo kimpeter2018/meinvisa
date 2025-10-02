@@ -63,6 +63,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  Future<void> _signinWithGoogle() async {
+    setState(() => _isGoogleLoading = true);
+    try {
+      await ref.read(authViewModelProvider.notifier).signInWithGoogle();
+    } catch (e) {
+      _showAuthErrorDialog(e.toString());
+    } finally {
+      if (mounted) context.go('/home');
+    }
+  }
+
   void _showAuthErrorDialog(String message) {
     showDialog(
       context: context,
@@ -203,7 +214,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                 // Google Sign-In button
                 if (_isGoogleLoading)
-                  const CircularProgressIndicator(color: Colors.black)
+                  const Center(
+                    child: CircularProgressIndicator(color: Colors.black),
+                  )
                 else
                   OutlinedButton.icon(
                     icon: Image.asset(
@@ -212,12 +225,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     label: const Text("Sign in with Google"),
                     onPressed: () {
-                      ref
-                          .read(authViewModelProvider.notifier)
-                          .signInWithGoogle();
-                      setState(() {
-                        _isGoogleLoading = true;
-                      });
+                      _signinWithGoogle();
                     },
                   ),
                 const SizedBox(height: 24),

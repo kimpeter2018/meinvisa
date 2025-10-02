@@ -39,11 +39,16 @@ class AuthViewModel extends StateNotifier<AsyncValue<Session?>> {
   }
 
   /// Email Sign-In
-  Future<void> signInWithEmail(String email, String password) async {
+  Future<bool> signInWithEmail(String email, String password) async {
     // state = const AsyncValue.loading();
     try {
-      await _repository.signInWithEmail(email, password);
+      final user = await _repository.signInWithEmail(email, password);
       state = AsyncValue.data(_repository.currentSession);
+
+      // Refresh user session to get latest email confirmation status
+      await _repository.refreshSession();
+
+      return user?.emailConfirmedAt != null;
     } catch (e) {
       state = AsyncValue.data(null);
       rethrow;
@@ -64,6 +69,14 @@ class AuthViewModel extends StateNotifier<AsyncValue<Session?>> {
   Future<bool> doesEmailExist(String email) async {
     try {
       return await _repository.doesEmailExist(email);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<bool> checkEmailConfirmed() async {
+    try {
+      return await _repository.checkEmailConfirmed();
     } catch (e) {
       return false;
     }

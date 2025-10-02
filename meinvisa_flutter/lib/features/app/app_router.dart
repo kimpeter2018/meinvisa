@@ -33,7 +33,8 @@ final router = GoRouter(
       path: '/email-confirmation',
       builder: (context, state) {
         final email = state.uri.queryParameters['email'] ?? '';
-        return EmailConfirmationScreen(email: email);
+        final password = state.uri.queryParameters['password'] ?? '';
+        return EmailConfirmationScreen(email: email, password: password);
       },
     ),
     GoRoute(
@@ -53,6 +54,8 @@ final router = GoRouter(
             if (snapshot.hasError) {
               return EmailConfirmationScreen(
                 email: '', // or pass state.queryParams['email']
+                password: '', // or pass state.queryParams['password']
+                // You might want to show an error message here
                 // errorMessage: snapshot.error.toString(),
               );
             }

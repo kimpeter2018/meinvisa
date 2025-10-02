@@ -126,8 +126,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) =>
-              EmailConfirmationScreen(email: _emailController.text.trim()),
+          builder: (_) => EmailConfirmationScreen(
+            email: _emailController.text.trim(),
+            password: _confirmPassword,
+          ),
         ),
       );
 

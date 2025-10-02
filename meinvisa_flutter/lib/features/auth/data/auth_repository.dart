@@ -69,7 +69,7 @@ class AuthRepository {
   }
 
   /// Email Sign In
-  Future<void> signInWithEmail(String email, String password) async {
+  Future<User?> signInWithEmail(String email, String password) async {
     final response = await _client.auth.signInWithPassword(
       email: email,
       password: password,
@@ -78,6 +78,9 @@ class AuthRepository {
     if (response.session == null) {
       throw 'Failed to sign in with email.';
     }
+
+    if (response.user == null) return null;
+    return response.user;
   }
 
   // Returns true if user exists
@@ -89,6 +92,15 @@ class AuthRepository {
         .maybeSingle();
 
     return response != null;
+  }
+
+  Future<bool> checkEmailConfirmed() async {
+    await _client.auth.refreshSession(); // refresh user state
+    print(
+      "Email Confirmed at = ${_client.auth.currentUser?.emailConfirmedAt.toString()}",
+    );
+    final user = _client.auth.currentUser;
+    return user?.emailConfirmedAt != null;
   }
 
   Future<void> resendVerificationEmail(String email) async {
@@ -117,6 +129,10 @@ class AuthRepository {
     );
 
     await _client.from('users').insert(user.toJson());
+  }
+
+  Future<void> refreshSession() async {
+    await _client.auth.refreshSession();
   }
 
   // Also disconnect Google sign-in
