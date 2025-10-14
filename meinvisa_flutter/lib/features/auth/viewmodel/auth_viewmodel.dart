@@ -55,6 +55,14 @@ class AuthViewModel extends StateNotifier<AsyncValue<Session?>> {
     }
   }
 
+  Future<void> createUserRecord(String name) async {
+    try {
+      await _repository.createUserRecord(name);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   /// Sign out
   Future<void> signOut() async {
     state = const AsyncValue.loading();

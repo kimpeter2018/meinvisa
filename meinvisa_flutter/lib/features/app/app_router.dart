@@ -2,7 +2,7 @@ import 'package:meinvisa/features/app/auth_gate.dart';
 import 'package:meinvisa/features/auth/view/email_confirmation_screen.dart';
 import 'package:meinvisa/features/auth/view/login_screen.dart';
 import 'package:meinvisa/features/auth/view/signup_screen.dart';
-import 'package:meinvisa/features/home/view/home_screen.dart';
+import 'package:meinvisa/features/home/view/home_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -21,7 +21,7 @@ final router = GoRouter(
         return const LoginScreen();
       },
     ),
-    GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
+    GoRoute(path: '/home', builder: (context, state) => const HomeLayout()),
     GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
     GoRoute(path: '/signup', builder: (context, state) => const SignupScreen()),
     // GoRoute(
@@ -61,7 +61,7 @@ final router = GoRouter(
 
             final session = snapshot.data;
             if (session != null) {
-              return const HomeScreen(); // success — user confirmed
+              return const HomeLayout(); // success — user confirmed
             } else {
               return const LoginScreen(); // failed — retry login
             }

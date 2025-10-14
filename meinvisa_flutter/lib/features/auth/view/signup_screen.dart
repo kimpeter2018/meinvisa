@@ -121,7 +121,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       } else if (!_passwordsMatch) {
         return;
       }
-
       await _signUp();
       Navigator.push(
         context,
