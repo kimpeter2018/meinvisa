@@ -2,11 +2,13 @@ import 'package:go_router/go_router.dart';
 import 'package:meinvisa/core/utils/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:meinvisa/features/auth/view/email_confirmation_screen.dart';
 import 'package:meinvisa/features/auth/widgets/show_auth_dialog';
 import '../../../core/providers/auth_provider.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
+  static const routeName = '/signup';
 
   @override
   ConsumerState<SignupScreen> createState() => _SignupScreenState();
@@ -144,8 +146,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
       if (!mounted) return;
 
-      context.push(
-        'email-confirmation',
+      context.go(
+        EmailConfirmationScreen.routeName,
         extra: {
           'email': _emailController.text.trim(),
           'password': _confirmPassword,

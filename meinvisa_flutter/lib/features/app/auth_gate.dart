@@ -1,7 +1,7 @@
 import 'package:meinvisa/core/providers/auth_provider.dart';
 import 'package:meinvisa/core/providers/user_provider.dart';
 import 'package:meinvisa/features/auth/view/login_screen.dart';
-import 'package:meinvisa/features/home/view/home_screen.dart';
+import 'package:meinvisa/features/home/view/home_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -17,7 +17,7 @@ class AuthGate extends ConsumerWidget {
         if (auth == null) {
           return const LoginScreen();
         }
-        return const HomeScreen();
+        return const HomeLayout();
       },
       loading: () {
         return Scaffold(body: Center(child: CircularProgressIndicator()));

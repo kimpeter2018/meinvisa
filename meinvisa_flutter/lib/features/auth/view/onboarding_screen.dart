@@ -1,5 +1,7 @@
+import 'package:go_router/go_router.dart';
 import 'package:meinvisa/features/auth/view/onboarding_examples.dart';
 import 'package:flutter/material.dart';
+import 'package:meinvisa/features/home/view/home_layout.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -42,7 +44,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     // await Supabase.instance.client.from('users').insert(user.toJson());
 
     if (mounted) {
-      Navigator.pushReplacementNamed(context, '/home');
+      context.pushReplacementNamed(HomeLayout.routeName);
     }
   }
 

@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:meinvisa/core/providers/auth_provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:meinvisa/features/home/view/home_layout.dart';
 
 class EmailConfirmationScreen extends ConsumerStatefulWidget {
+  static const routeName = '/email-confirmation';
+
   final String email;
   final String password; // Keep the password temporarily to retry login
 
@@ -45,7 +48,7 @@ class _EmailConfirmationScreenState
           .read(authViewModelProvider.notifier)
           .handleEmailConfirmation(widget.email, widget.password);
 
-      if (mounted) context.go('/home');
+      if (mounted) context.go(HomeLayout.routeName);
     } catch (e) {
       ScaffoldMessenger.of(
         context,

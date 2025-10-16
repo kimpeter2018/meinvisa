@@ -21,15 +21,21 @@ final router = GoRouter(
         return const LoginScreen();
       },
     ),
-    GoRoute(path: '/home', builder: (context, state) => const HomeLayout()),
-    GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
-    GoRoute(path: '/signup', builder: (context, state) => const SignupScreen()),
-    // GoRoute(
-    //   path: '/onboarding',
-    //   builder: (context, state) => const OnboardingScreen(),
-    // ),
     GoRoute(
-      path: '/email-confirmation',
+      path: HomeLayout.routeName,
+      builder: (context, state) => const HomeLayout(),
+    ),
+    GoRoute(
+      path: LoginScreen.routeName,
+      builder: (context, state) => const LoginScreen(),
+    ),
+    GoRoute(
+      path: SignupScreen.routeName,
+      builder: (context, state) => const SignupScreen(),
+    ),
+
+    GoRoute(
+      path: EmailConfirmationScreen.routeName,
       builder: (context, state) {
         final email = state.uri.queryParameters['email'] ?? '';
         final password = state.uri.queryParameters['password'] ?? '';

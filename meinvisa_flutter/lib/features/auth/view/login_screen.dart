@@ -1,13 +1,16 @@
 import 'package:meinvisa/core/utils/validators.dart';
+import 'package:meinvisa/features/auth/view/email_confirmation_screen.dart';
 import 'package:meinvisa/features/auth/view/signup_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:meinvisa/features/auth/widgets/show_auth_dialog';
+import 'package:meinvisa/features/home/view/home_layout.dart';
 import '../../../core/providers/auth_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
+  static const routeName = '/login';
 
   @override
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
@@ -59,7 +62,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (!mounted) return;
 
       if (confirmed) {
-        context.go('/home');
+        context.go(HomeLayout.routeName);
       } else {
         showAuthDialog(
           context: context,
@@ -84,7 +87,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     .resendVerificationEmail(email);
                 if (mounted) {
                   context.go(
-                    '/email-confirmation',
+                    EmailConfirmationScreen.routeName,
                     extra: {'email': email, 'password': password},
                   );
                 }
@@ -113,10 +116,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SignupScreen()),
-              );
+              context.push(SignupScreen.routeName);
             },
             child: const Text("Sign Up"),
           ),
@@ -132,7 +132,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     try {
       await ref.read(authViewModelProvider.notifier).signInWithGoogle();
       if (!mounted) return;
-      context.go('/home');
+      context.go(HomeLayout.routeName);
     } catch (e) {
       showAuthDialog(
         context: context,
@@ -276,12 +276,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     const Text("Don't have an account?"),
                     TextButton(
                       onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const SignupScreen(),
-                          ),
-                        );
+                        context.push(SignupScreen.routeName);
                       },
                       child: const Text(
                         "Sign Up",

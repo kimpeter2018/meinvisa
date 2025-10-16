@@ -4,9 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:meinvisa/core/providers/auth_provider.dart';
 import 'package:meinvisa/core/providers/user_provider.dart';
+import 'package:meinvisa/features/auth/view/login_screen.dart';
 
 class HomeLayout extends ConsumerStatefulWidget {
-  const HomeLayout({Key? key}) : super(key: key);
+  const HomeLayout({super.key});
+  static const routeName = '/home';
 
   @override
   ConsumerState<HomeLayout> createState() => _HomeLayoutState();
@@ -35,7 +37,7 @@ class _HomeLayoutState extends ConsumerState<HomeLayout> {
         print(e.toString());
       }
     } finally {
-      if (mounted) context.go('/login');
+      if (mounted) context.go(LoginScreen.routeName);
     }
   }
 
