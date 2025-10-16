@@ -44,21 +44,11 @@ class _EmailConfirmationScreenState
     setState(() => _isLoading = true);
 
     try {
-      final confirmed = await ref
+      await ref
           .read(authViewModelProvider.notifier)
-          .signInWithEmail(widget.email, widget.password);
+          .handleEmailConfirmation(widget.email, widget.password);
 
-      if (confirmed) {
-        // Create user record in the database
-        await ref
-            .read(authViewModelProvider.notifier)
-            .createUserRecord(widget.email.split('@').first, widget.email);
-        if (mounted) context.go('/home');
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Email not confirmed yet.")),
-        );
-      }
+      if (mounted) context.go('/home');
     } catch (e) {
       ScaffoldMessenger.of(
         context,

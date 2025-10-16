@@ -45,15 +45,6 @@ class AuthRepository {
         throw 'No ID Token found.';
       }
 
-      // Check if user record exists in 'users' table
-      if (await userExists(_client.auth.currentUser!.id)) {
-        // First time sign-in, create user record
-        await createUserRecord(
-          _client.auth.currentUser!.userMetadata?['name'] ?? '',
-          _client.auth.currentUser!.userMetadata?['email'],
-        );
-      }
-
       await _client.auth.signInWithIdToken(
         provider: OAuthProvider.google,
         idToken: idToken,

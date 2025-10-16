@@ -16,10 +16,21 @@ class AuthViewModel extends StateNotifier<AsyncValue<Session?>> {
   /// Sign in with Google
   Future<void> signInWithGoogle() async {
     state = const AsyncValue.loading();
-
     try {
       await _repository.signInWithGoogle();
       final session = _repository.currentSession;
+      if (session == null) throw Exception("No session found after sign-in");
+
+      final user = session.user;
+      final userExists = await _repository.userExists(user.id);
+
+      if (!userExists) {
+        await _repository.createUserRecord(
+          user.userMetadata?['name'] ?? '',
+          user.email ?? '',
+        );
+      }
+
       state = AsyncValue.data(session);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -35,6 +46,23 @@ class AuthViewModel extends StateNotifier<AsyncValue<Session?>> {
     } catch (e) {
       state = AsyncValue.data(null);
       rethrow;
+    }
+  }
+
+  /// Handle email confirmation and create user record if confirmed
+  Future<void> handleEmailConfirmation(String email, String password) async {
+    final confirmed = await signInWithEmail(email, password);
+
+    if (confirmed) {
+      final user = _repository.currentSession?.user;
+      if (user != null && !(await _repository.userExists(user.id))) {
+        await _repository.createUserRecord(
+          user.email?.split('@').first ?? '',
+          user.email ?? '',
+        );
+      }
+    } else {
+      throw Exception("Email not confirmed yet");
     }
   }
 
