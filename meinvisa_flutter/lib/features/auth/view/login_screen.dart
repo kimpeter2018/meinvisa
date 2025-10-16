@@ -72,9 +72,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _showAuthErrorDialog(e.toString());
     } finally {
       if (mounted) {
-        await ref
-            .read(authViewModelProvider.notifier)
-            .createUserRecord(ref.read(userProvider).value!.name ?? "");
         context.go('/home');
       }
     }

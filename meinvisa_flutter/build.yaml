@@ -1,0 +1,9 @@
+targets:
+  $default:
+    builders:
+      json_serializable:
+        generate_for:
+          - lib/core/models/**
+        options:
+          field_rename: snake
+          explicit_to_json: true

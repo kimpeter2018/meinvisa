@@ -52,7 +52,7 @@ class _EmailConfirmationScreenState
         // Create user record in the database
         await ref
             .read(authViewModelProvider.notifier)
-            .createUserRecord(widget.email.split('@').first);
+            .createUserRecord(widget.email.split('@').first, widget.email);
         if (mounted) context.go('/home');
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
