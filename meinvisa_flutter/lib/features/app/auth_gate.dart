@@ -1,3 +1,4 @@
+import 'package:meinvisa/core/providers/auth_provider.dart';
 import 'package:meinvisa/core/providers/user_provider.dart';
 import 'package:meinvisa/features/auth/view/login_screen.dart';
 import 'package:meinvisa/features/home/view/home_screen.dart';
@@ -9,21 +10,19 @@ class AuthGate extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final userAsync = ref.watch(userProvider);
+    final authAsync = ref.watch(authStateProvider);
 
-    return userAsync.when(
-      data: (user) {
-        if (user == null) {
-          print("AuthGate: No user data, navigating to LoginScreen");
+    return authAsync.when(
+      data: (auth) {
+        if (auth == null) {
           return const LoginScreen();
         }
         return const HomeScreen();
       },
       loading: () {
-        print("AuthGate: Loading user data...");
         return Scaffold(body: Center(child: CircularProgressIndicator()));
       },
-      error: (err, __) {
+      error: (_, __) {
         return const LoginScreen();
       },
     );

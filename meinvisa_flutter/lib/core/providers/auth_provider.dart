@@ -10,7 +10,7 @@ final supabaseProvider = Provider<SupabaseClient>((ref) {
 });
 
 // Auth state changes
-final authStateProvider = StreamProvider<Session?>((ref) {
+final authStateProvider = StreamProvider.autoDispose((ref) {
   final auth = ref.read(supabaseProvider).auth;
 
   return auth.onAuthStateChange.map((data) {
