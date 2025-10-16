@@ -49,7 +49,10 @@ class _EmailConfirmationScreenState
           .signInWithEmail(widget.email, widget.password);
 
       if (confirmed) {
-        // Navigate to home
+        // Create user record in the database
+        await ref
+            .read(authViewModelProvider.notifier)
+            .createUserRecord(widget.email.split('@').first, widget.email);
         if (mounted) context.go('/home');
       } else {
         ScaffoldMessenger.of(context).showSnackBar(

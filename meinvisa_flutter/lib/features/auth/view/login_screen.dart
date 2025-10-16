@@ -1,3 +1,4 @@
+import 'package:meinvisa/core/providers/user_provider.dart';
 import 'package:meinvisa/core/utils/validators.dart';
 import 'package:meinvisa/features/auth/view/signup_screen.dart';
 import 'package:flutter/material.dart';
@@ -70,7 +71,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     } catch (e) {
       _showAuthErrorDialog(e.toString());
     } finally {
-      if (mounted) context.go('/home');
+      if (mounted) {
+        context.go('/home');
+      }
     }
   }
 

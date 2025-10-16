@@ -7,3 +7,17 @@
 .env.local
 .env.*.local
 .env.prod
+
+# Flutter
+.dart_tool/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Environment files
+.env
+supabase/.env
+
+# IDE
+.idea/
+.vscode/
