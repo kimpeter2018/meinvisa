@@ -1,7 +1,8 @@
+import 'package:go_router/go_router.dart';
 import 'package:meinvisa/core/utils/validators.dart';
-import 'package:meinvisa/features/auth/view/email_confirmation_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:meinvisa/features/auth/widgets/show_auth_dialog';
 import '../../../core/providers/auth_provider.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
@@ -116,20 +117,39 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           .read(authViewModelProvider.notifier)
           .doesEmailExist(_emailController.text.trim());
       if (exists) {
-        _showExistingEmailDialog();
+        showAuthDialog(
+          context: context,
+          title: "Email Already Registered",
+          content: "An account with this email exists. Sign in instead?",
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.popUntil(context, (r) => r.isFirst),
+              child: const Text("Sign In"),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _passwordController.clear();
+                _confirmPasswordController.clear();
+              },
+              child: const Text("Try Again"),
+            ),
+          ],
+        );
         return;
       } else if (!_passwordsMatch) {
         return;
       }
       await _signUp();
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => EmailConfirmationScreen(
-            email: _emailController.text.trim(),
-            password: _confirmPassword,
-          ),
-        ),
+
+      if (!mounted) return;
+
+      context.push(
+        'email-confirmation',
+        extra: {
+          'email': _emailController.text.trim(),
+          'password': _confirmPassword,
+        },
       );
 
       return;
@@ -175,36 +195,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               Navigator.popUntil(context, (route) => route.isFirst);
             },
             child: const Text("OK"),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showExistingEmailDialog() {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("Email Already Registered"),
-        content: const Text(
-          "An account with this email already exists. Would you like to sign in instead?",
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.popUntil(context, (route) => route.isFirst);
-            },
-            child: const Text("Sign In"),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              setState(() {
-                _passwordController.clear();
-                _confirmPasswordController.clear();
-              });
-            },
-            child: const Text("Try Again"),
           ),
         ],
       ),

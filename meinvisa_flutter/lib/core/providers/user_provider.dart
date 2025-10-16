@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:meinvisa/core/models/user_model.dart';
 import 'package:meinvisa/core/providers/auth_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// StreamProvider to always reflect the latest app user
 final userProvider = StreamProvider<UserModel?>((ref) {

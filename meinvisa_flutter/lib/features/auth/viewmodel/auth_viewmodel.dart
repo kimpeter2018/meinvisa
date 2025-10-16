@@ -6,20 +6,32 @@ class AuthViewModel extends StateNotifier<AsyncValue<Session?>> {
   final AuthRepository _repository;
 
   AuthViewModel(this._repository) : super(const AsyncValue.loading()) {
-    _loadCurrentUser();
+    _initialize();
   }
 
-  Future<void> _loadCurrentUser() async {
-    state = AsyncValue.data(_repository.currentSession);
+  // ---------------------------------------------------------------------------
+  // INITIALIZATION
+  // ---------------------------------------------------------------------------
+  Future<void> _initialize() async {
+    try {
+      final session = _repository.currentSession;
+      state = AsyncValue.data(session);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
   }
 
-  /// Sign in with Google
+  // ---------------------------------------------------------------------------
+  // GOOGLE SIGN-IN
+  // ---------------------------------------------------------------------------
   Future<void> signInWithGoogle() async {
     state = const AsyncValue.loading();
+
     try {
       await _repository.signInWithGoogle();
+
       final session = _repository.currentSession;
-      if (session == null) throw Exception("No session found after sign-in");
+      if (session == null) throw Exception('No session found after sign-in.');
 
       final user = session.user;
       final userExists = await _repository.userExists(user.id);
@@ -37,61 +49,74 @@ class AuthViewModel extends StateNotifier<AsyncValue<Session?>> {
     }
   }
 
-  /// Email Sign-Up
+  // ---------------------------------------------------------------------------
+  // EMAIL SIGN-UP
+  // ---------------------------------------------------------------------------
   Future<void> signUpWithEmail(String email, String password) async {
-    // state = const AsyncValue.loading();
     try {
       await _repository.signUpWithEmail(email, password);
+      // Don't set loading here — UI can show partial spinner.
       state = AsyncValue.data(_repository.currentSession);
-    } catch (e) {
+    } catch (e, st) {
+      // Keep state null to avoid blocking UI
       state = AsyncValue.data(null);
-      rethrow;
+      throw Exception('Sign-up failed: $e');
     }
   }
 
-  /// Handle email confirmation and create user record if confirmed
-  Future<void> handleEmailConfirmation(String email, String password) async {
-    final confirmed = await signInWithEmail(email, password);
-
-    if (confirmed) {
-      final user = _repository.currentSession?.user;
-      if (user != null && !(await _repository.userExists(user.id))) {
-        await _repository.createUserRecord(
-          user.email?.split('@').first ?? '',
-          user.email ?? '',
-        );
-      }
-    } else {
-      throw Exception("Email not confirmed yet");
-    }
-  }
-
-  /// Email Sign-In
+  // ---------------------------------------------------------------------------
+  // EMAIL SIGN-IN
+  // ---------------------------------------------------------------------------
   Future<bool> signInWithEmail(String email, String password) async {
-    // state = const AsyncValue.loading();
     try {
       final user = await _repository.signInWithEmail(email, password);
+      await _repository.refreshSession(); // ensure latest email state
       state = AsyncValue.data(_repository.currentSession);
-
-      // Refresh user session to get latest email confirmation status
-      await _repository.refreshSession();
-
       return user?.emailConfirmedAt != null;
-    } catch (e) {
+    } catch (e, st) {
       state = AsyncValue.data(null);
-      rethrow;
+      throw Exception('Sign-in failed: $e');
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // EMAIL CONFIRMATION HANDLING
+  // ---------------------------------------------------------------------------
+  Future<void> handleEmailConfirmation(String email, String password) async {
+    final confirmed = await signInWithEmail(email, password);
+    if (!confirmed) throw Exception('Email not confirmed yet.');
+
+    final user = _repository.currentSession?.user;
+    if (user != null && !(await _repository.userExists(user.id))) {
+      await _repository.createUserRecord(
+        user.email?.split('@').first ?? '',
+        user.email ?? '',
+      );
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // USER MANAGEMENT
+  // ---------------------------------------------------------------------------
   Future<void> createUserRecord(String name, String email) async {
-    try {
-      await _repository.createUserRecord(name, email);
-    } catch (e) {
-      rethrow;
-    }
+    await _repository.createUserRecord(name, email);
   }
 
-  /// Sign out
+  Future<bool> doesEmailExist(String email) async {
+    return _repository.doesEmailExist(email);
+  }
+
+  Future<bool> checkEmailConfirmed() async {
+    return _repository.checkEmailConfirmed();
+  }
+
+  Future<void> resendVerificationEmail(String email) async {
+    await _repository.resendVerificationEmail(email);
+  }
+
+  // ---------------------------------------------------------------------------
+  // SIGN-OUT
+  // ---------------------------------------------------------------------------
   Future<void> signOut() async {
     state = const AsyncValue.loading();
     try {
@@ -102,31 +127,10 @@ class AuthViewModel extends StateNotifier<AsyncValue<Session?>> {
     }
   }
 
-  Future<bool> doesEmailExist(String email) async {
-    try {
-      return await _repository.doesEmailExist(email);
-    } catch (e) {
-      return false;
-    }
-  }
-
-  Future<bool> checkEmailConfirmed() async {
-    try {
-      return await _repository.checkEmailConfirmed();
-    } catch (e) {
-      return false;
-    }
-  }
-
-  Future<void> resendVerificationEmail(String email) async {
-    try {
-      await _repository.resendVerificationEmail(email);
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  void setSession(Session session) {
+  // ---------------------------------------------------------------------------
+  // SESSION HELPERS
+  // ---------------------------------------------------------------------------
+  void setSession(Session? session) {
     state = AsyncValue.data(session);
   }
 }

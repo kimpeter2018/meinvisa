@@ -23,20 +23,17 @@ class _EmailConfirmationScreenState
   bool _isLoading = false;
 
   Future<void> _resendEmail() async {
-    setState(() => _isLoading = true);
     try {
       await ref
           .read(authViewModelProvider.notifier)
           .resendVerificationEmail(widget.email);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Verification email resent.")),
+        const SnackBar(content: Text('Verification email resent!')),
       );
     } catch (e) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text("Error: $e")));
-    } finally {
-      setState(() => _isLoading = false);
+      ).showSnackBar(SnackBar(content: Text('Failed to resend: $e')));
     }
   }
 

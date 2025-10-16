@@ -1,9 +1,9 @@
-import 'package:meinvisa/core/providers/user_provider.dart';
 import 'package:meinvisa/core/utils/validators.dart';
 import 'package:meinvisa/features/auth/view/signup_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:meinvisa/features/auth/widgets/show_auth_dialog';
 import '../../../core/providers/auth_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -40,49 +40,65 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _showPasswordField = true;
     });
 
-    if (_showPasswordField) {
-      FocusScope.of(context).requestFocus(_passwordFocusNode);
-    }
+    FocusScope.of(context).requestFocus(_passwordFocusNode);
   }
 
   Future<void> _submitEmailPassword() async {
+    setState(() => _isEmailLoading = true);
+
     if (!_formKey.currentState!.validate()) return;
 
     final email = _emailController.text.trim();
     final password = _passwordController.text;
 
-    setState(() => _isEmailLoading = true);
-
     try {
-      await ref
+      final confirmed = await ref
           .read(authViewModelProvider.notifier)
           .signInWithEmail(email, password);
-    } catch (e) {
-      _showAuthErrorDialog(e.toString());
-    } finally {
-      if (mounted) context.go('/home');
-    }
-  }
 
-  Future<void> _signinWithGoogle() async {
-    setState(() => _isGoogleLoading = true);
-    try {
-      await ref.read(authViewModelProvider.notifier).signInWithGoogle();
-    } catch (e) {
-      _showAuthErrorDialog(e.toString());
-    } finally {
-      if (mounted) {
+      if (!mounted) return;
+
+      if (confirmed) {
         context.go('/home');
+      } else {
+        showAuthDialog(
+          context: context,
+          title: "Confirm Your Email",
+          content: 'Your email is not confirmed yet. Please check your inbox.',
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                setState(() {
+                  _showPasswordField = true;
+                  _emailLocked = true;
+                });
+              },
+              child: const Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await ref
+                    .read(authViewModelProvider.notifier)
+                    .resendVerificationEmail(email);
+                if (mounted) {
+                  context.go(
+                    '/email-confirmation',
+                    extra: {'email': email, 'password': password},
+                  );
+                }
+              },
+              child: const Text("Confirm Email"),
+            ),
+          ],
+        );
       }
-    }
-  }
-
-  void _showAuthErrorDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("Authentication Failed"),
-        content: const Text("Invalid credentials or account not found."),
+    } catch (e) {
+      showAuthDialog(
+        context: context,
+        title: "Authentication Failed",
+        content: e.toString(),
         actions: [
           TextButton(
             onPressed: () {
@@ -105,8 +121,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             child: const Text("Sign Up"),
           ),
         ],
-      ),
-    );
+      );
+    } finally {
+      if (mounted) setState(() => _isEmailLoading = false);
+    }
+  }
+
+  Future<void> _signinWithGoogle() async {
+    setState(() => _isGoogleLoading = true);
+    try {
+      await ref.read(authViewModelProvider.notifier).signInWithGoogle();
+      if (!mounted) return;
+      context.go('/home');
+    } catch (e) {
+      showAuthDialog(
+        context: context,
+        title: "Google Sign-In Failed",
+        content: e.toString(),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isGoogleLoading = false);
+      }
+    }
   }
 
   @override
