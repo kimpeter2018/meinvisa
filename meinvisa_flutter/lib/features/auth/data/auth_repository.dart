@@ -97,9 +97,7 @@ class AuthRepository {
 
   Future<bool> checkEmailConfirmed() async {
     await _client.auth.refreshSession(); // refresh user state
-    print(
-      "Email Confirmed at = ${_client.auth.currentUser?.emailConfirmedAt.toString()}",
-    );
+
     final user = _client.auth.currentUser;
     return user?.emailConfirmedAt != null;
   }

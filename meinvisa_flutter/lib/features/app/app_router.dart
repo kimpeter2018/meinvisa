@@ -37,8 +37,9 @@ final router = GoRouter(
     GoRoute(
       path: EmailConfirmationScreen.routeName,
       builder: (context, state) {
-        final email = state.uri.queryParameters['email'] ?? '';
-        final password = state.uri.queryParameters['password'] ?? '';
+        final args = state.extra as Map<String, String>? ?? {};
+        final email = args['email'] ?? '';
+        final password = args['password'] ?? '';
         return EmailConfirmationScreen(email: email, password: password);
       },
     ),

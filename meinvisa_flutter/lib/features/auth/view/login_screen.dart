@@ -4,6 +4,7 @@ import 'package:meinvisa/features/auth/view/signup_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:meinvisa/features/auth/viewmodel/auth_viewmodel.dart';
 import 'package:meinvisa/features/auth/widgets/show_auth_dialog';
 import 'package:meinvisa/features/home/view/home_layout.dart';
 import '../../../core/providers/auth_provider.dart';
@@ -26,6 +27,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _emailLocked = false;
   bool _isEmailLoading = false;
   bool _isGoogleLoading = false;
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
@@ -63,62 +65,43 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
       if (confirmed) {
         context.go(HomeLayout.routeName);
-      } else {
-        showAuthDialog(
-          context: context,
-          title: "Confirm Your Email",
-          content: 'Your email is not confirmed yet. Please check your inbox.',
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                setState(() {
-                  _showPasswordField = true;
-                  _emailLocked = true;
-                });
-              },
-              child: const Text("Cancel"),
-            ),
-            TextButton(
-              onPressed: () async {
-                Navigator.of(context).pop();
-                await ref
-                    .read(authViewModelProvider.notifier)
-                    .resendVerificationEmail(email);
-                if (mounted) {
-                  context.go(
-                    EmailConfirmationScreen.routeName,
-                    extra: {'email': email, 'password': password},
-                  );
-                }
-              },
-              child: const Text("Confirm Email"),
-            ),
-          ],
-        );
       }
-    } catch (e) {
+    } on EmailNotConfirmedException {
+      showAuthDialog(
+        context: context,
+        title: "Confirm Your Email",
+        content: 'Your email is not confirmed yet. Please check your inbox.',
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              await ref
+                  .read(authViewModelProvider.notifier)
+                  .resendVerificationEmail(email);
+              if (mounted) {
+                context.go(
+                  EmailConfirmationScreen.routeName,
+                  extra: {'email': email, 'password': password},
+                );
+              }
+            },
+            child: const Text("Confirm Email"),
+          ),
+        ],
+      );
+    } on AuthFailedException catch (e) {
       showAuthDialog(
         context: context,
         title: "Authentication Failed",
-        content: e.toString(),
+        content: e.message,
         actions: [
           TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              setState(() {
-                _showPasswordField = true;
-                _emailLocked = true;
-              });
-            },
+            onPressed: () => Navigator.of(context).pop(),
             child: const Text("Try Again"),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              context.push(SignupScreen.routeName);
-            },
-            child: const Text("Sign Up"),
           ),
         ],
       );
@@ -191,9 +174,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   TextFormField(
                     controller: _passwordController,
                     cursorColor: Colors.black,
-                    decoration: const InputDecoration(labelText: 'Password'),
+                    decoration: InputDecoration(
+                      labelText: 'Password',
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscurePassword
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                        ),
+                        onPressed: () => setState(
+                          () => _obscurePassword = !_obscurePassword,
+                        ),
+                      ),
+                    ),
                     focusNode: _passwordFocusNode,
-                    obscureText: true,
+                    obscureText: _obscurePassword,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Please enter your password';
@@ -223,7 +218,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                 const SizedBox(height: 24),
                 if (_isEmailLoading)
-                  const CircularProgressIndicator(color: Colors.black)
+                  Center(
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(color: Colors.black),
+                    ),
+                  )
                 else
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(

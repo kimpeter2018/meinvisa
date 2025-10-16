@@ -64,12 +64,6 @@ class _EmailConfirmationScreenState
 
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(
-        title: const Text("Confirm Your Email"),
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-        elevation: 0,
-      ),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -78,7 +72,7 @@ class _EmailConfirmationScreenState
             Icon(Icons.mark_email_unread, size: 64, color: Colors.white),
             const SizedBox(height: 24),
             Text(
-              "Check your email",
+              "Check your email at ${widget.email}",
               style: textTheme.headlineSmall?.copyWith(color: Colors.white),
               textAlign: TextAlign.center,
             ),

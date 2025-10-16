@@ -146,7 +146,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
       if (!mounted) return;
 
-      context.go(
+      context.push(
         EmailConfirmationScreen.routeName,
         extra: {
           'email': _emailController.text.trim(),

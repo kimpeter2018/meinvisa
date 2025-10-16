@@ -70,12 +70,18 @@ class AuthViewModel extends StateNotifier<AsyncValue<Session?>> {
   Future<bool> signInWithEmail(String email, String password) async {
     try {
       final user = await _repository.signInWithEmail(email, password);
-      await _repository.refreshSession(); // ensure latest email state
+      await _repository.refreshSession(); // optional, refresh session
       state = AsyncValue.data(_repository.currentSession);
+
       return user?.emailConfirmedAt != null;
     } catch (e, st) {
       state = AsyncValue.data(null);
-      throw Exception('Sign-in failed: $e');
+      final message = e is Exception ? e.toString() : '$e';
+      if (message.contains('Email not confirmed')) {
+        throw EmailNotConfirmedException();
+      } else {
+        throw AuthFailedException(message);
+      }
     }
   }
 
@@ -133,4 +139,14 @@ class AuthViewModel extends StateNotifier<AsyncValue<Session?>> {
   void setSession(Session? session) {
     state = AsyncValue.data(session);
   }
+}
+
+class EmailNotConfirmedException implements Exception {
+  final String message;
+  EmailNotConfirmedException([this.message = "Email is not confirmed"]);
+}
+
+class AuthFailedException implements Exception {
+  final String message;
+  AuthFailedException([this.message = "Authentication failed"]);
 }
