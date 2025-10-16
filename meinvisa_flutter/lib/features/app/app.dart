@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+import 'package:meinvisa/core/debug/debug_button.dart';
 import 'package:meinvisa/core/theme/theme.dart';
 import 'package:meinvisa/features/app/app_router.dart';
 import 'package:meinvisa/core/theme/app_text_styles.dart';
@@ -25,6 +27,18 @@ class App extends ConsumerWidget {
       themeMode: ThemeMode.system,
       routerConfig: router,
       debugShowCheckedModeBanner: false,
+      builder: (context, child) {
+        return Builder(
+          builder: (innerContext) {
+            return Stack(
+              children: [
+                child ?? const SizedBox(),
+                if (kDebugMode) const DebugButton(),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }

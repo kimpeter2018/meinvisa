@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+import 'package:meinvisa/core/debug/debug_overlay.dart';
 import 'package:meinvisa/features/app/auth_gate.dart';
 import 'package:meinvisa/features/auth/view/email_confirmation_screen.dart';
 import 'package:meinvisa/features/auth/view/login_screen.dart';
@@ -7,8 +9,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
+
 final router = GoRouter(
   initialLocation: '/',
+  navigatorKey: rootNavigatorKey,
   routes: [
     GoRoute(
       path: '/',
@@ -43,6 +48,11 @@ final router = GoRouter(
         return EmailConfirmationScreen(email: email, password: password);
       },
     ),
+    if (kDebugMode)
+      GoRoute(
+        path: DebugOverlay.routeName,
+        builder: (context, state) => const DebugOverlay(),
+      ),
     GoRoute(
       path: '/auth-callback',
       builder: (context, state) {
