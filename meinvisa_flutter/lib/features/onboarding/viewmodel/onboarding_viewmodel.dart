@@ -1,65 +1,79 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:meinvisa/data/models/user_model.dart';
+import 'package:meinvisa/data/providers/onboarding_provider.dart';
+import 'package:meinvisa/data/repositories/user_repository.dart';
 import 'package:meinvisa/features/onboarding/repository/onboarding_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class OnboardingViewModel extends StateNotifier<AsyncValue<void>> {
-  final OnboardingRepository _repository;
-  final SupabaseClient _client;
+class OnboardingNotifier extends AutoDisposeAsyncNotifier<UserModel?> {
+  late final OnboardingRepository _onboardingRepository;
+  late final UserRepository _userRepository;
 
-  // Local fields for onboarding data
-  String? name;
-  String? nationality;
-  String? occupation;
-  String? purposeOfStay;
+  @override
+  Future<UserModel?> build() async {
+    _onboardingRepository = ref.read(onboardingRepositoryProvider);
+    _userRepository = ref.read(userRepositoryProvider);
 
-  OnboardingViewModel(this._repository, this._client)
-    : super(const AsyncValue.data(null));
+    // Get current logged-in user ID
+    final sessionUser = Supabase.instance.client.auth.currentUser;
+    if (sessionUser == null) return null;
 
-  // ---------------------------------------------------------------------------
-  // UPDATE LOCAL DATA
-  // ---------------------------------------------------------------------------
-  void setName(String value) => name = value.trim();
-  void setNationality(String? value) => nationality = value?.trim();
-  void setOccupation(String? value) => occupation = value?.trim();
-  void setPurposeOfStay(String? value) => purposeOfStay = value?.trim();
+    // Fetch existing user from DB
+    final existingUser = await _userRepository.getUser(sessionUser.id);
 
-  // ---------------------------------------------------------------------------
-  // SUBMIT TO SUPABASE
-  // ---------------------------------------------------------------------------
-  Future<void> completeOnboarding() async {
-    final user = _client.auth.currentUser;
-    if (user == null) {
-      throw Exception("User not authenticated");
+    // Save initial draft in onboarding repository
+    if (existingUser != null) {
+      await _onboardingRepository.saveDraft(existingUser);
     }
 
-    if (name == null || name!.isEmpty) {
-      throw Exception("Name is required");
-    }
-
-    state = const AsyncValue.loading();
-
-    try {
-      await _repository.saveOnboardingData(
-        userId: user.id,
-        name: name!,
-        nationality: nationality,
-        occupation: occupation,
-        purposeOfStay: purposeOfStay,
-      );
-
-      state = const AsyncValue.data(null);
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
-    }
+    return existingUser;
   }
 
-  // ---------------------------------------------------------------------------
-  // HELPER: Check if onboarding already done
-  // ---------------------------------------------------------------------------
-  Future<bool> isOnboardingComplete() async {
-    final user = _client.auth.currentUser;
-    if (user == null) return false;
+  // -------------------------
+  // UPDATE FIELDS DURING ONBOARDING
+  // -------------------------
+  Future<void> updateName(String name) async {
+    final current = state.value!;
+    final updated = current.copyWith(name: name);
+    state = AsyncValue.data(updated);
+    await _onboardingRepository.saveDraft(updated);
+  }
 
-    return _repository.isOnboardingComplete(user.id);
+  Future<void> updateAvatar(String avatarUrl) async {
+    final current = state.value!;
+    final updated = current.copyWith(avatarUrl: avatarUrl);
+    state = AsyncValue.data(updated);
+    await _onboardingRepository.saveDraft(updated);
+  }
+
+  Future<void> updateNationality(String nationality) async {
+    final current = state.value!;
+    final updated = current.copyWith(nationality: nationality);
+    state = AsyncValue.data(updated);
+    await _onboardingRepository.saveDraft(updated);
+  }
+
+  Future<void> updateOccupation(String occupation) async {
+    final current = state.value!;
+    final updated = current.copyWith(occupation: occupation);
+    state = AsyncValue.data(updated);
+    await _onboardingRepository.saveDraft(updated);
+  }
+
+  Future<void> updatePurpose(String purpose) async {
+    final current = state.value!;
+    final updated = current.copyWith(purposeOfStay: purpose);
+    state = AsyncValue.data(updated);
+    await _onboardingRepository.saveDraft(updated);
+  }
+
+  // -------------------------
+  // COMPLETE ONBOARDING
+  // -------------------------
+  Future<void> completeOnboarding() async {
+    final user = state.value;
+    if (user != null) {
+      await _onboardingRepository.completeOnboarding(user);
+    }
   }
 }

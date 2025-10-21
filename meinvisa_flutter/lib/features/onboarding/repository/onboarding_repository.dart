@@ -1,62 +1,26 @@
 import 'package:meinvisa/data/models/user_model.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:meinvisa/data/repositories/user_repository.dart';
 
+/// Handles temporary user draft during onboarding
 class OnboardingRepository {
-  final SupabaseClient _client;
-  OnboardingRepository(this._client);
+  final UserRepository _userRepository;
+  UserModel? _draft;
 
-  // ---------------------------------------------------------------------------
-  // CREATE / UPDATE USER PROFILE
-  // ---------------------------------------------------------------------------
-  Future<void> saveOnboardingData({
-    required String userId,
-    required String name,
-    String? nationality,
-    String? occupation,
-    String? purposeOfStay,
-  }) async {
-    final data = {
-      'id': userId,
-      'name': name,
-      'nationality': nationality,
-      'occupation': occupation,
-      'purpose_of_stay': purposeOfStay,
-      'updated_at': DateTime.now().toIso8601String(),
-    };
+  OnboardingRepository(this._userRepository);
 
-    // upsert = insert or update existing record
-    await _client.from('users').upsert(data);
+  UserModel? getDraft() => _draft;
+
+  Future<void> saveDraft(UserModel user) async {
+    _draft = user;
   }
 
-  // ---------------------------------------------------------------------------
-  // FETCH EXISTING USER (if needed)
-  // ---------------------------------------------------------------------------
-  Future<UserModel?> fetchUser(String userId) async {
-    final response = await _client
-        .from('users')
-        .select()
-        .eq('id', userId)
-        .maybeSingle();
-
-    if (response == null) return null;
-    return UserModel.fromJson(response);
+  /// Persist the updated user to Supabase
+  Future<void> completeOnboarding(UserModel user) async {
+    await _userRepository.updateUser(user);
+    _draft = null; // clear temporary draft
   }
 
-  // ---------------------------------------------------------------------------
-  // CHECK IF USER ALREADY COMPLETED ONBOARDING
-  // ---------------------------------------------------------------------------
-  Future<bool> isOnboardingComplete(String userId) async {
-    final response = await _client
-        .from('users')
-        .select('name, nationality, occupation, purpose_of_stay')
-        .eq('id', userId)
-        .maybeSingle();
-
-    if (response == null) return false;
-
-    return response['name'] != null &&
-        response['nationality'] != null &&
-        response['occupation'] != null &&
-        response['purpose_of_stay'] != null;
+  void clearDraft() {
+    _draft = null;
   }
 }

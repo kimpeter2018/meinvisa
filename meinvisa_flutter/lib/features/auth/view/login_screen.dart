@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:meinvisa/features/auth/viewmodel/auth_viewmodel.dart';
-import 'package:meinvisa/features/auth/widgets/show_auth_dialog';
+import 'package:meinvisa/features/auth/widgets/auth_dialog';
 import 'package:meinvisa/features/home/view/home_layout.dart';
 import '../../../data/providers/auth_provider.dart';
 

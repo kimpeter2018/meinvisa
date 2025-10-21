@@ -3,7 +3,7 @@ import 'package:meinvisa/core/utils/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:meinvisa/features/auth/view/email_confirmation_screen.dart';
-import 'package:meinvisa/features/auth/widgets/show_auth_dialog';
+import 'package:meinvisa/features/auth/widgets/auth_dialog';
 import '../../../data/providers/auth_provider.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
