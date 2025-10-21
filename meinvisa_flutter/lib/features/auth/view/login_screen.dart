@@ -7,7 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:meinvisa/features/auth/viewmodel/auth_viewmodel.dart';
 import 'package:meinvisa/features/auth/widgets/show_auth_dialog';
 import 'package:meinvisa/features/home/view/home_layout.dart';
-import '../../../core/providers/auth_provider.dart';
+import '../../../data/providers/auth_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});

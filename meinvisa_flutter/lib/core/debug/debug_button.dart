@@ -1,8 +1,7 @@
-// lib/core/debug/debug_button.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:meinvisa/core/debug/debug_logger.dart';
-import 'package:meinvisa/features/app/app_router.dart';
+import 'package:meinvisa/core/config/app_router.dart';
 import 'debug_overlay.dart';
 
 class DebugButton extends StatelessWidget {

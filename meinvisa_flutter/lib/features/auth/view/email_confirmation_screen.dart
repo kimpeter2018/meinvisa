@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:meinvisa/core/providers/auth_provider.dart';
+import 'package:meinvisa/data/providers/auth_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:meinvisa/features/home/view/home_layout.dart';
 

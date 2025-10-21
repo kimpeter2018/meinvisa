@@ -1,5 +1,5 @@
-import 'package:meinvisa/core/providers/auth_provider.dart';
-import 'package:meinvisa/core/providers/user_provider.dart';
+import 'package:meinvisa/data/providers/auth_provider.dart';
+import 'package:meinvisa/data/providers/user_provider.dart';
 import 'package:meinvisa/features/auth/view/login_screen.dart';
 import 'package:meinvisa/features/home/view/home_layout.dart';
 import 'package:flutter/material.dart';

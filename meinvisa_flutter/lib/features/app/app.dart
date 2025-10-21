@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:meinvisa/core/debug/debug_button.dart';
-import 'package:meinvisa/core/theme/theme.dart';
-import 'package:meinvisa/features/app/app_router.dart';
-import 'package:meinvisa/core/theme/app_text_styles.dart';
+import 'package:meinvisa/core/config/theme.dart';
+import 'package:meinvisa/core/config/app_router.dart';
+import 'package:meinvisa/core/constants/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

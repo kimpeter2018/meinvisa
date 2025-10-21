@@ -2,8 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:meinvisa/core/providers/auth_provider.dart';
-import 'package:meinvisa/core/providers/user_provider.dart';
+import 'package:meinvisa/data/providers/auth_provider.dart';
+import 'package:meinvisa/data/providers/user_provider.dart';
 import 'package:meinvisa/features/auth/view/login_screen.dart';
 
 class HomeLayout extends ConsumerStatefulWidget {

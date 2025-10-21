@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:meinvisa/features/onboarding/data/onboarding_repository.dart';
+import 'package:meinvisa/features/onboarding/repository/onboarding_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class OnboardingViewModel extends StateNotifier<AsyncValue<void>> {
