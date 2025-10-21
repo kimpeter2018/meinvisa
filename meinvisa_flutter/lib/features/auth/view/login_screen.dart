@@ -1,4 +1,6 @@
 import 'package:meinvisa/core/utils/validators.dart';
+import 'package:meinvisa/data/providers/user_provider.dart';
+import 'package:meinvisa/data/repositories/user_repository.dart';
 import 'package:meinvisa/features/auth/view/email_confirmation_screen.dart';
 import 'package:meinvisa/features/auth/view/signup_screen.dart';
 import 'package:flutter/material.dart';
@@ -112,10 +114,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _signinWithGoogle() async {
     setState(() => _isGoogleLoading = true);
+
     try {
-      await ref.read(authViewModelProvider.notifier).signInWithGoogle();
+      final isFirstLogin = await ref
+          .read(authViewModelProvider.notifier)
+          .signInWithGoogle();
+
       if (!mounted) return;
-      context.go(HomeLayout.routeName);
+
+      if (isFirstLogin) {
+        context.go('/onboarding'); // navigate to OnboardingScreen
+      } else {
+        context.go(HomeLayout.routeName); // existing user
+      }
     } catch (e) {
       showAuthDialog(
         context: context,
@@ -123,9 +134,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         content: e.toString(),
       );
     } finally {
-      if (mounted) {
-        setState(() => _isGoogleLoading = false);
-      }
+      if (mounted) setState(() => _isGoogleLoading = false);
     }
   }
 

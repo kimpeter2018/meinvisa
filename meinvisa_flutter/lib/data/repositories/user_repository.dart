@@ -25,7 +25,7 @@ class UserRepository {
         .maybeSingle();
 
     if (response == null) return null;
-    return UserModel.fromJson(Map<String, dynamic>.from(response));
+    return UserModel.fromJson(response);
   }
 
   // ---------------------------------------------------------------------------

@@ -3,6 +3,7 @@ import 'package:meinvisa/data/models/user_model.dart';
 import 'package:meinvisa/data/providers/onboarding_provider.dart';
 import 'package:meinvisa/data/repositories/user_repository.dart';
 import 'package:meinvisa/features/onboarding/repository/onboarding_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class OnboardingNotifier extends AutoDisposeAsyncNotifier<UserModel?> {
@@ -72,8 +73,13 @@ class OnboardingNotifier extends AutoDisposeAsyncNotifier<UserModel?> {
   // -------------------------
   Future<void> completeOnboarding() async {
     final user = state.value;
+
     if (user != null) {
       await _onboardingRepository.completeOnboarding(user);
+      final prefs = await SharedPreferences.getInstance();
+      final userId = user.id;
+
+      await prefs.setBool('onboarding_completed_$userId', true);
     }
   }
 }

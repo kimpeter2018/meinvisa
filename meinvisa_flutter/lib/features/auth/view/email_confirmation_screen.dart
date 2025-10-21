@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:meinvisa/data/providers/auth_provider.dart';
 import 'package:go_router/go_router.dart';
-import 'package:meinvisa/features/home/view/home_layout.dart';
+import 'package:meinvisa/features/onboarding/view/onboarding_screen.dart';
 
 class EmailConfirmationScreen extends ConsumerStatefulWidget {
   static const routeName = '/email-confirmation';
@@ -48,7 +48,7 @@ class _EmailConfirmationScreenState
           .read(authViewModelProvider.notifier)
           .handleEmailConfirmation(widget.email, widget.password);
 
-      if (mounted) context.go(HomeLayout.routeName);
+      if (mounted) context.go(OnboardingScreen.routeName);
     } catch (e) {
       ScaffoldMessenger.of(
         context,

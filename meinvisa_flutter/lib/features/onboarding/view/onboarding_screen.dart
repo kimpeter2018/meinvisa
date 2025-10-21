@@ -9,6 +9,8 @@ import 'package:meinvisa/features/onboarding/view/occupation_screen.dart';
 import 'package:meinvisa/features/onboarding/view/purpose_screen.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
+  static const routeName = '/onboarding';
+
   const OnboardingScreen({super.key});
 
   @override

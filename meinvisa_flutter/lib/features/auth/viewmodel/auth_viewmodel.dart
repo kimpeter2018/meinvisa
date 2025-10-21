@@ -27,7 +27,7 @@ class AuthViewModel extends StateNotifier<AsyncValue<Session?>> {
   // ---------------------------------------------------------------------------
   // GOOGLE SIGN-IN
   // ---------------------------------------------------------------------------
-  Future<void> signInWithGoogle() async {
+  Future<bool> signInWithGoogle() async {
     state = const AsyncValue.loading();
 
     try {
@@ -51,8 +51,10 @@ class AuthViewModel extends StateNotifier<AsyncValue<Session?>> {
       }
 
       state = AsyncValue.data(session);
+      return userExists;
     } catch (e, st) {
       state = AsyncValue.error(e, st);
+      rethrow;
     }
   }
 

@@ -7,6 +7,7 @@ import 'package:meinvisa/features/auth/view/signup_screen.dart';
 import 'package:meinvisa/features/home/view/home_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:meinvisa/features/onboarding/view/onboarding_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -38,7 +39,6 @@ final router = GoRouter(
       path: SignupScreen.routeName,
       builder: (context, state) => const SignupScreen(),
     ),
-
     GoRoute(
       path: EmailConfirmationScreen.routeName,
       builder: (context, state) {
@@ -47,6 +47,10 @@ final router = GoRouter(
         final password = args['password'] ?? '';
         return EmailConfirmationScreen(email: email, password: password);
       },
+    ),
+    GoRoute(
+      path: OnboardingScreen.routeName,
+      builder: (context, state) => OnboardingScreen(),
     ),
     if (kDebugMode)
       GoRoute(
@@ -78,7 +82,7 @@ final router = GoRouter(
 
             final session = snapshot.data;
             if (session != null) {
-              return const HomeLayout(); // success — user confirmed
+              return const OnboardingScreen(); // success — user confirmed
             } else {
               return const LoginScreen(); // failed — retry login
             }

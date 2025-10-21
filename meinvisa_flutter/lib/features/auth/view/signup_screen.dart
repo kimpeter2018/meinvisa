@@ -1,4 +1,5 @@
 import 'package:go_router/go_router.dart';
+import 'package:meinvisa/core/debug/debug_logger.dart';
 import 'package:meinvisa/core/utils/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -142,8 +143,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       } else if (!_passwordsMatch) {
         return;
       }
+      DebugLogger().log('Attempting sign-up for ${_emailController.text}');
       await _signUp();
-
+      DebugLogger().log('Sign-up successful for ${_emailController.text}');
       if (!mounted) return;
 
       context.push(
