@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:meinvisa/core/models/user_model.dart';
-import 'package:meinvisa/core/providers/auth_provider.dart';
+import 'package:meinvisa/data/models/user_model.dart';
+import 'package:meinvisa/data/providers/auth_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// StreamProvider to always reflect the latest app user

@@ -2,7 +2,7 @@ import 'package:meinvisa/features/auth/viewmodel/auth_viewmodel.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../features/auth/data/auth_repository.dart';
+import '../../features/auth/repository/auth_repository.dart';
 
 // Supabase client
 final supabaseProvider = Provider<SupabaseClient>((ref) {
