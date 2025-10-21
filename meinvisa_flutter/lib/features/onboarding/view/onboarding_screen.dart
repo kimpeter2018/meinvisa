@@ -1,90 +1,106 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:meinvisa/data/providers/onboarding_provider.dart';
+import 'package:meinvisa/features/home/view/home_layout.dart';
 import 'package:meinvisa/features/onboarding/view/name_screen.dart';
 import 'package:meinvisa/features/onboarding/view/nationality_screen.dart';
 import 'package:meinvisa/features/onboarding/view/occupation_screen.dart';
 import 'package:meinvisa/features/onboarding/view/purpose_screen.dart';
-import 'package:flutter/material.dart';
-import 'package:meinvisa/features/home/view/home_layout.dart';
 
-class OnboardingScreen extends StatefulWidget {
+class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
   @override
-  State<OnboardingScreen> createState() => _OnboardingScreenState();
+  ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> {
+class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final PageController _controller = PageController();
-  String? name;
-  String? avatarUrl;
-  String? bio;
+  final ValueNotifier<int> _currentIndex = ValueNotifier<int>(0);
 
-  int _currentIndex = 0;
-
-  void _nextPage() {
-    if (_currentIndex < 2) {
+  /// Navigate to next page or finish onboarding
+  Future<void> _nextPage() async {
+    if (_currentIndex.value < 3) {
       _controller.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
     } else {
-      _finishOnboarding();
+      await _finishOnboarding();
     }
   }
 
+  /// Complete onboarding and navigate to Home
   Future<void> _finishOnboarding() async {
-    // TODO: Create UserModel and upload to Supabase
-    // final userId = Supabase.instance.client.auth.currentUser!.id;
-
-    // final user = UserModel(
-    //   id: userId,
-    //   email: Supabase.instance.client.auth.currentUser!.email!,
-    //   name: name,
-    //   avatarUrl: avatarUrl,
-    //   createdAt: DateTime.now(),
-    // );
-
-    // await Supabase.instance.client.from('users').insert(user.toJson());
-
+    await ref.read(onboardingProvider.notifier).completeOnboarding();
     if (mounted) {
       context.pushReplacementNamed(HomeLayout.routeName);
     }
   }
 
   @override
+  void dispose() {
+    _controller.dispose();
+    _currentIndex.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: PageView(
-        controller: _controller,
-        physics: const NeverScrollableScrollPhysics(),
-        onPageChanged: (index) => setState(() => _currentIndex = index),
-        children: [
-          PassportNamePage(
-            onNext: (value) {
-              name = value;
-              _nextPage();
-            },
+    final onboardingAsync = ref.watch(onboardingProvider);
+
+    return onboardingAsync.when(
+      data: (user) {
+        if (user == null) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        return Scaffold(
+          body: PageView(
+            controller: _controller,
+            physics: const NeverScrollableScrollPhysics(),
+            onPageChanged: (index) => _currentIndex.value = index,
+            children: [
+              PassportNamePage(
+                onNext: (value) async {
+                  await ref.read(onboardingProvider.notifier).updateName(value);
+                  _nextPage();
+                },
+              ),
+              PassportNationalityPage(
+                onNext: (value) async {
+                  await ref
+                      .read(onboardingProvider.notifier)
+                      .updateNationality(value ?? '');
+                  _nextPage();
+                },
+              ),
+              OccupationPage(
+                onNext: (value) async {
+                  await ref
+                      .read(onboardingProvider.notifier)
+                      .updateOccupation(value ?? '');
+                  _nextPage();
+                },
+              ),
+              PurposeOfStayPage(
+                onNext: (value) async {
+                  await ref
+                      .read(onboardingProvider.notifier)
+                      .updatePurpose(value ?? '');
+                  _nextPage();
+                },
+              ),
+            ],
           ),
-          PassportNationalityPage(
-            onNext: (value) {
-              avatarUrl = value;
-              _nextPage();
-            },
-          ),
-          OccupationPage(
-            onNext: (value) {
-              bio = value;
-              _nextPage();
-            },
-          ),
-          PurposeOfStayPage(
-            onNext: (value) {
-              // You can store the purpose of stay if needed
-              _finishOnboarding();
-            },
-          ),
-        ],
-      ),
+        );
+      },
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (err, st) => Scaffold(body: Center(child: Text('Error: $err'))),
     );
   }
 }

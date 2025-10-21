@@ -1,41 +1,48 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:meinvisa/data/providers/onboarding_provider.dart';
 
-/// 3️⃣ Occupation Page (Optional)
-class OccupationPage extends StatelessWidget {
+class OccupationPage extends ConsumerStatefulWidget {
   final ValueChanged<String?> onNext;
   const OccupationPage({super.key, required this.onNext});
 
   @override
-  Widget build(BuildContext context) {
-    final controller = TextEditingController();
+  ConsumerState<OccupationPage> createState() => _OccupationPageState();
+}
 
+class _OccupationPageState extends ConsumerState<OccupationPage> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    final occupation = ref.read(onboardingProvider).value?.occupation ?? '';
+    _controller = TextEditingController(text: occupation);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text(
-            "What's your occupation?",
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
-          ),
+          const Text("What's your occupation?", style: TextStyle(fontSize: 22)),
+          const SizedBox(height: 12),
+          TextField(controller: _controller),
           const SizedBox(height: 16),
-          TextField(
-            controller: controller,
-            decoration: const InputDecoration(
-              labelText: "e.g. Student, Engineer, Researcher",
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: () => onNext(
-              controller.text.trim().isEmpty ? null : controller.text.trim(),
-            ),
-            child: const Text("Next"),
-          ),
-          TextButton(
-            onPressed: () => onNext(null),
-            child: const Text("Skip for now"),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              ElevatedButton(
+                onPressed: () => widget.onNext(null),
+                child: const Text("Skip for now"),
+              ),
+              ElevatedButton(
+                onPressed: () => widget.onNext(_controller.text),
+                child: const Text("Next"),
+              ),
+            ],
           ),
         ],
       ),
