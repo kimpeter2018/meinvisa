@@ -1,5 +1,8 @@
 import 'package:go_router/go_router.dart';
-import 'package:meinvisa/features/auth/view/onboarding_examples.dart';
+import 'package:meinvisa/features/onboarding/view/name_screen.dart';
+import 'package:meinvisa/features/onboarding/view/nationality_screen.dart';
+import 'package:meinvisa/features/onboarding/view/occupation_screen.dart';
+import 'package:meinvisa/features/onboarding/view/purpose_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:meinvisa/features/home/view/home_layout.dart';
 
@@ -56,22 +59,28 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         physics: const NeverScrollableScrollPhysics(),
         onPageChanged: (index) => setState(() => _currentIndex = index),
         children: [
-          NamePage(
+          PassportNamePage(
             onNext: (value) {
               name = value;
               _nextPage();
             },
           ),
-          AvatarPage(
+          PassportNationalityPage(
             onNext: (value) {
               avatarUrl = value;
               _nextPage();
             },
           ),
-          BioPage(
+          OccupationPage(
             onNext: (value) {
               bio = value;
               _nextPage();
+            },
+          ),
+          PurposeOfStayPage(
+            onNext: (value) {
+              // You can store the purpose of stay if needed
+              _finishOnboarding();
             },
           ),
         ],
