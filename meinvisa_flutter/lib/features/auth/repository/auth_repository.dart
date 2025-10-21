@@ -84,17 +84,6 @@ class AuthRepository {
     return response.user;
   }
 
-  // Returns true if user exists
-  Future<bool> doesEmailExist(String email) async {
-    final response = await _client
-        .from('users') // or your auth table
-        .select('id')
-        .eq('email', email)
-        .maybeSingle();
-
-    return response != null;
-  }
-
   Future<bool> checkEmailConfirmed() async {
     await _client.auth.refreshSession(); // refresh user state
 
@@ -104,29 +93,6 @@ class AuthRepository {
 
   Future<void> resendVerificationEmail(String email) async {
     await _client.auth.resend(type: OtpType.signup, email: email);
-  }
-
-  Future<bool> userExists(String userId) async {
-    final response = await _client
-        .from('users')
-        .select('id')
-        .eq('id', userId)
-        .maybeSingle();
-    return response != null;
-  }
-
-  Future<void> createUserRecord(String name, String email) async {
-    final userId = _client.auth.currentUser!.id;
-
-    final user = UserModel(
-      id: userId,
-      email: email,
-      name: name,
-      avatarUrl: null,
-      createdAt: DateTime.now(),
-    );
-
-    await _client.from('users').insert(user.toJson());
   }
 
   Future<void> refreshSession() async {

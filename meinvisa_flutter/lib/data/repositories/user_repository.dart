@@ -55,6 +55,27 @@ class UserRepository {
     }
   }
 
+  Future<bool> exists(String userId) async {
+    final response = await _client
+        .from('users')
+        .select('id')
+        .eq('id', userId)
+        .maybeSingle();
+    return response != null;
+  }
+
+  // ---------------------------------------------------------------------------
+  // EMAIL CHECK
+  // ---------------------------------------------------------------------------
+  Future<bool> emailExists(String email) async {
+    final response = await _client
+        .from('users')
+        .select('id')
+        .eq('email', email)
+        .maybeSingle();
+    return response != null;
+  }
+
   // ---------------------------------------------------------------------------
   // DELETE USER (optional)
   // ---------------------------------------------------------------------------

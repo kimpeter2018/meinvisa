@@ -1,20 +1,23 @@
-import 'package:meinvisa/features/auth/repository/auth_repository.dart';
+import 'package:meinvisa/data/models/user_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:meinvisa/data/repositories/user_repository.dart';
+import 'package:meinvisa/features/auth/repository/auth_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthViewModel extends StateNotifier<AsyncValue<Session?>> {
-  final AuthRepository _repository;
+  final AuthRepository _authRepository;
+  final UserRepository _userRepository;
 
-  AuthViewModel(this._repository) : super(const AsyncValue.loading()) {
+  AuthViewModel(this._authRepository, this._userRepository)
+    : super(const AsyncValue.loading()) {
     _initialize();
   }
-
   // ---------------------------------------------------------------------------
   // INITIALIZATION
   // ---------------------------------------------------------------------------
   Future<void> _initialize() async {
     try {
-      final session = _repository.currentSession;
+      final session = _authRepository.currentSession;
       state = AsyncValue.data(session);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -28,18 +31,22 @@ class AuthViewModel extends StateNotifier<AsyncValue<Session?>> {
     state = const AsyncValue.loading();
 
     try {
-      await _repository.signInWithGoogle();
+      await _authRepository.signInWithGoogle();
 
-      final session = _repository.currentSession;
+      final session = _authRepository.currentSession;
       if (session == null) throw Exception('No session found after sign-in.');
 
       final user = session.user;
-      final userExists = await _repository.userExists(user.id);
+      final userExists = await _userRepository.exists(user.id);
 
       if (!userExists) {
-        await _repository.createUserRecord(
-          user.userMetadata?['name'] ?? '',
-          user.email ?? '',
+        await _userRepository.createUser(
+          UserModel(
+            id: user.id,
+            email: user.email!,
+            name: user.userMetadata?['name'],
+            createdAt: DateTime.now(),
+          ),
         );
       }
 
@@ -54,9 +61,9 @@ class AuthViewModel extends StateNotifier<AsyncValue<Session?>> {
   // ---------------------------------------------------------------------------
   Future<void> signUpWithEmail(String email, String password) async {
     try {
-      await _repository.signUpWithEmail(email, password);
+      await _authRepository.signUpWithEmail(email, password);
       // Don't set loading here — UI can show partial spinner.
-      state = AsyncValue.data(_repository.currentSession);
+      state = AsyncValue.data(_authRepository.currentSession);
     } catch (e, st) {
       // Keep state null to avoid blocking UI
       state = AsyncValue.data(null);
@@ -69,9 +76,9 @@ class AuthViewModel extends StateNotifier<AsyncValue<Session?>> {
   // ---------------------------------------------------------------------------
   Future<bool> signInWithEmail(String email, String password) async {
     try {
-      final user = await _repository.signInWithEmail(email, password);
-      await _repository.refreshSession(); // optional, refresh session
-      state = AsyncValue.data(_repository.currentSession);
+      final user = await _authRepository.signInWithEmail(email, password);
+      await _authRepository.refreshSession(); // optional, refresh session
+      state = AsyncValue.data(_authRepository.currentSession);
 
       return user?.emailConfirmedAt != null;
     } catch (e, st) {
@@ -92,32 +99,28 @@ class AuthViewModel extends StateNotifier<AsyncValue<Session?>> {
     final confirmed = await signInWithEmail(email, password);
     if (!confirmed) throw Exception('Email not confirmed yet.');
 
-    final user = _repository.currentSession?.user;
-    if (user != null && !(await _repository.userExists(user.id))) {
-      await _repository.createUserRecord(
-        user.email?.split('@').first ?? '',
-        user.email ?? '',
-      );
+    final userSession = _authRepository.currentSession?.user;
+    final user = UserModel(
+      id: userSession!.id,
+      email: userSession.email!,
+      createdAt: DateTime.now(),
+    );
+
+    if (userSession != null && !(await _userRepository.exists(user.id))) {
+      await _userRepository.createUser(user);
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // USER MANAGEMENT
-  // ---------------------------------------------------------------------------
-  Future<void> createUserRecord(String name, String email) async {
-    await _repository.createUserRecord(name, email);
-  }
-
   Future<bool> doesEmailExist(String email) async {
-    return _repository.doesEmailExist(email);
+    return _userRepository.emailExists(email);
   }
 
   Future<bool> checkEmailConfirmed() async {
-    return _repository.checkEmailConfirmed();
+    return _authRepository.checkEmailConfirmed();
   }
 
   Future<void> resendVerificationEmail(String email) async {
-    await _repository.resendVerificationEmail(email);
+    await _authRepository.resendVerificationEmail(email);
   }
 
   // ---------------------------------------------------------------------------
@@ -126,7 +129,7 @@ class AuthViewModel extends StateNotifier<AsyncValue<Session?>> {
   Future<void> signOut() async {
     state = const AsyncValue.loading();
     try {
-      await _repository.signOut();
+      await _authRepository.signOut();
       state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);

@@ -1,3 +1,4 @@
+import 'package:meinvisa/data/repositories/user_repository.dart';
 import 'package:meinvisa/features/auth/viewmodel/auth_viewmodel.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -46,6 +47,7 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
 // ViewModel
 final authViewModelProvider =
     StateNotifierProvider<AuthViewModel, AsyncValue<Session?>>((ref) {
-      final repo = ref.read(authRepositoryProvider);
-      return AuthViewModel(repo);
+      final authrepo = ref.read(authRepositoryProvider);
+      final userrepo = ref.read(userRepositoryProvider);
+      return AuthViewModel(authrepo, userrepo);
     });
