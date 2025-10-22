@@ -1,19 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:country_picker/country_picker.dart';
+import 'package:meinvisa/data/models/visa_questionnaire_model/visa_questionnaire_model.dart';
 import 'package:meinvisa/data/providers/visa_recommendation_provider.dart';
 
-class PassportNationalityPage extends ConsumerStatefulWidget {
+class NationalityPage extends ConsumerStatefulWidget {
   final ValueChanged<String?> onNext;
-  const PassportNationalityPage({super.key, required this.onNext});
+  const NationalityPage({super.key, required this.onNext});
 
   @override
-  ConsumerState<PassportNationalityPage> createState() =>
-      _PassportNationalityPageState();
+  ConsumerState<NationalityPage> createState() => _NationalityPageState();
 }
 
-class _PassportNationalityPageState
-    extends ConsumerState<PassportNationalityPage> {
+class _NationalityPageState extends ConsumerState<NationalityPage> {
   Country? _selectedCountry;
   String _searchQuery = '';
 
@@ -118,25 +117,33 @@ class _PassportNationalityPageState
           ),
           const SizedBox(height: 24),
 
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              TextButton(
-                onPressed: () => widget.onNext(null),
-                style: TextButton.styleFrom(
-                  textStyle: const TextStyle(
-                    decoration: TextDecoration.underline,
-                  ),
-                ),
-                child: const Text("Skip for now"),
-              ),
-              ElevatedButton(
-                onPressed: _selectedCountry != null
-                    ? () => widget.onNext(_selectedCountry!.countryCode)
-                    : null,
-                child: const Text("Next"),
-              ),
-            ],
+          ElevatedButton(
+            onPressed: _selectedCountry != null
+                ? () {
+                    final notifier = ref.read(
+                      visaRecommendationProvider.notifier,
+                    );
+
+                    // Get current draft or create a new one
+                    final draft =
+                        notifier.getDraft() ??
+                        const VisaQuestionnaire(
+                          occupationCode: '',
+                          nationality: '',
+                        );
+
+                    // Update nationality
+                    notifier.saveUserResponse(
+                      draft.copyWith(
+                        nationality: _selectedCountry!.countryCode,
+                      ),
+                    );
+
+                    // Call the callback to move to next page
+                    widget.onNext(_selectedCountry!.countryCode);
+                  }
+                : null,
+            child: const Text("Next"),
           ),
         ],
       ),

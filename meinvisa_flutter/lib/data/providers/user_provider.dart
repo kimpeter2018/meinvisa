@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:meinvisa/data/models/user_model.dart';
+import 'package:meinvisa/data/models/user_model/user_model.dart';
 import 'package:meinvisa/data/providers/auth_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

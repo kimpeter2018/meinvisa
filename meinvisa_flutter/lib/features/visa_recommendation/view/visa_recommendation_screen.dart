@@ -6,7 +6,7 @@ import 'package:meinvisa/features/home/view/home_layout.dart';
 import 'package:meinvisa/features/visa_recommendation/view/name_screen.dart';
 import 'package:meinvisa/features/visa_recommendation/view/nationality_screen.dart';
 import 'package:meinvisa/features/visa_recommendation/view/occupation_screen.dart';
-import 'package:meinvisa/features/visa_recommendation/view/purpose_screen.dart';
+import 'package:meinvisa/features/visa_recommendation/view/salary_recognition_page.dart';
 
 class VisaRecommendationScreen extends ConsumerStatefulWidget {
   static const routeName = '/visa-recommendation';
@@ -106,30 +106,13 @@ class _VisaRecommendationScreenState
                       _nextPage();
                     },
                   ),
-                  PassportNationalityPage(
-                    onNext: (value) async {
-                      await ref
-                          .read(visaRecommendationProvider.notifier)
-                          .updateNationality(value ?? '');
+                  OccupationPage(onNext: _nextPage),
+                  NationalityPage(
+                    onNext: (String? countryCode) {
                       _nextPage();
                     },
                   ),
-                  OccupationPage(
-                    onNext: (value) async {
-                      await ref
-                          .read(visaRecommendationProvider.notifier)
-                          .updateOccupation(value ?? '');
-                      _nextPage();
-                    },
-                  ),
-                  PurposeOfStayPage(
-                    onNext: (value) async {
-                      await ref
-                          .read(visaRecommendationProvider.notifier)
-                          .updatePurpose(value ?? '');
-                      _nextPage();
-                    },
-                  ),
+                  SalaryRecognitionPage(onNext: _nextPage),
                 ],
               ),
             ),
