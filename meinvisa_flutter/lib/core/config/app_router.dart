@@ -30,6 +30,7 @@ final router = GoRouter(
     ),
     GoRoute(
       path: HomeLayout.routeName,
+      name: 'home',
       builder: (context, state) => const HomeLayout(),
     ),
     GoRoute(

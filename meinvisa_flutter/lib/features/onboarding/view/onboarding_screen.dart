@@ -98,9 +98,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
         return Scaffold(
           appBar: AppBar(
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back),
-              onPressed: _prevPage,
+            leading: ValueListenableBuilder<int>(
+              valueListenable: _currentIndex,
+              builder: (context, value, _) {
+                return IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: value > 0 ? _prevPage : null,
+                );
+              },
             ),
           ),
           body: SafeArea(
@@ -111,7 +116,22 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     controller: _controller,
                     physics: const NeverScrollableScrollPhysics(),
                     onPageChanged: (index) => _currentIndex.value = index,
-                    children: [],
+                    children: [
+                      // Page 1
+                      Center(
+                        child: ElevatedButton(
+                          onPressed: _nextPage,
+                          child: const Text('Next'),
+                        ),
+                      ),
+                      // Page 2
+                      Center(
+                        child: ElevatedButton(
+                          onPressed: _completeOnboarding,
+                          child: const Text('Complete'),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 16),

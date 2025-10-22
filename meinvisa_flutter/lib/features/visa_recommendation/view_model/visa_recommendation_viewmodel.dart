@@ -33,14 +33,7 @@ class VisaRecommendationNotifier extends AutoDisposeAsyncNotifier<UserModel?> {
 
   /// Submits the final questionnaire and retrieves the eligibility result
   Future<VisaEligibilityResult> handleSubmit() async {
-    final user = state.value;
-    if (user == null) throw Exception("User not found or not logged in.");
-
     final result = await _visaRepository.filterVisa();
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('onboarding_completed_${user.id}', true);
-
     return result;
   }
 

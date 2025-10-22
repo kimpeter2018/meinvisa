@@ -15,20 +15,20 @@ class _OccupationPageState extends ConsumerState<OccupationPage> {
   String? _selectedOccupation;
   String _searchQuery = '';
 
-  final List<String> occupations = [
-    'Software Developer',
-    'Nurse',
-    'Engineer',
-    'Teacher',
-    'Chef',
-    'Doctor',
-    'Designer',
-    'Scientist',
-    'Manager',
-  ];
+  final Map<String, String> occupationMap = {
+    'Software Engineer': 'software_engineer',
+    'Nurse': 'nurse',
+    'Engineer': 'engineer',
+    'Teacher': 'teacher',
+    'Chef': 'chef',
+    'Doctor': 'doctor',
+    'Designer': 'designer',
+    'Scientist': 'scientist',
+    'Manager': 'manager',
+  };
 
   void _showOccupationPicker() {
-    final filtered = occupations
+    final filtered = occupationMap.keys
         .where((occ) => occ.toLowerCase().contains(_searchQuery.toLowerCase()))
         .toList();
 
@@ -127,8 +127,11 @@ class _OccupationPageState extends ConsumerState<OccupationPage> {
                           nationality: '',
                         );
 
+                    // convert display name to snake_case code
+                    final occupationCode = occupationMap[_selectedOccupation!]!;
+
                     notifier.saveUserResponse(
-                      draft.copyWith(occupationCode: _selectedOccupation!),
+                      draft.copyWith(occupationCode: occupationCode),
                     );
 
                     widget.onNext();

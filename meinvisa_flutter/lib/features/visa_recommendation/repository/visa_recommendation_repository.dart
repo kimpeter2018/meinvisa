@@ -1,5 +1,6 @@
 // lib/features/visa_recommendation/repository/visa_recommendation_repository.dart
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:meinvisa/core/debug/debug_logger.dart';
 import 'package:meinvisa/data/models/visa_eligibility_result_model/visa_eligibility_result_model.dart';
 import 'package:meinvisa/data/models/visa_questionnaire_model/visa_questionnaire_model.dart';
 import 'package:meinvisa/data/repositories/user_repository.dart';
@@ -26,9 +27,9 @@ class VisaRecommendationRepository {
     if (_draft == null) {
       throw Exception("No questionnaire data available.");
     }
-
+    DebugLogger().log('Submitting Visa Questionnaire: ${_draft!.toJson()}');
     final response = await _supabase.functions.invoke(
-      'visa-eligibility',
+      'visa-filter',
       body: _draft!.toJson(),
       headers: {
         'Authorization': 'Bearer ${dotenv.env['SUPABASE_FUNCTION_KEY']}',

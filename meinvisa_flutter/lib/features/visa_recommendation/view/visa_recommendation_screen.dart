@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:meinvisa/core/debug/debug_logger.dart';
 import 'package:meinvisa/data/providers/visa_recommendation_provider.dart';
 import 'package:meinvisa/features/home/view/home_layout.dart';
 import 'package:meinvisa/features/visa_recommendation/view/name_screen.dart';
@@ -46,9 +47,12 @@ class _VisaRecommendationScreenState
   }
 
   Future<void> _submitVisaData() async {
-    await ref.read(visaRecommendationProvider.notifier).handleSubmit();
+    final response = await ref
+        .read(visaRecommendationProvider.notifier)
+        .handleSubmit();
     if (mounted) {
-      context.pushReplacementNamed(HomeLayout.routeName);
+      context.pushReplacement(HomeLayout.routeName);
+      DebugLogger().log('Received Visa Recommendation: $response');
     }
   }
 

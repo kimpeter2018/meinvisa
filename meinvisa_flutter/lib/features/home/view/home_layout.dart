@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:meinvisa/data/providers/auth_provider.dart';
 import 'package:meinvisa/data/providers/user_provider.dart';
 import 'package:meinvisa/features/auth/view/login_screen.dart';
+import 'package:meinvisa/features/visa_recommendation/view/visa_recommendation_screen.dart';
 
 class HomeLayout extends ConsumerStatefulWidget {
   const HomeLayout({super.key});
@@ -17,10 +18,17 @@ class HomeLayout extends ConsumerStatefulWidget {
 class _HomeLayoutState extends ConsumerState<HomeLayout> {
   int _selectedIndex = 0;
 
-  static const List<Widget> _pages = <Widget>[
-    Center(child: Text('Home')),
-    Center(child: Text('Search')),
-    Center(child: Text('Profile')),
+  static List<Widget> _pages(BuildContext context) => <Widget>[
+    Center(
+      child: ElevatedButton(
+        onPressed: () {
+          context.go(VisaRecommendationScreen.routeName);
+        },
+        child: const Text('Go to Visa Recommendation'),
+      ),
+    ),
+    const Center(child: Text('Search')),
+    const Center(child: Text('Profile')),
   ];
 
   void _onItemTapped(int index) {
@@ -61,7 +69,7 @@ class _HomeLayoutState extends ConsumerState<HomeLayout> {
               ),
             ],
           ),
-          body: _pages[_selectedIndex],
+          body: _pages(context)[_selectedIndex], // <-- updated here
           bottomNavigationBar: BottomNavigationBar(
             currentIndex: _selectedIndex,
             onTap: _onItemTapped,

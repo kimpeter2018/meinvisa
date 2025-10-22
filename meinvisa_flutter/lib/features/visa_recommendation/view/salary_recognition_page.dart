@@ -13,7 +13,7 @@ class SalaryRecognitionPage extends ConsumerStatefulWidget {
 }
 
 class _SalaryRecognitionPageState extends ConsumerState<SalaryRecognitionPage> {
-  double? _salary;
+  double _salary = 20000;
   bool _hasRecognition = false;
 
   @override
@@ -27,10 +27,11 @@ class _SalaryRecognitionPageState extends ConsumerState<SalaryRecognitionPage> {
             min: 20000,
             max: 200000,
             divisions: 36,
-            label: _salary?.toStringAsFixed(0) ?? '0',
-            value: _salary ?? 0,
+            label: _salary.toStringAsFixed(0),
+            value: _salary,
             onChanged: (val) => setState(() => _salary = val),
           ),
+
           Text('Salary: \$${_salary?.toStringAsFixed(0) ?? '0'}'),
           const SizedBox(height: 24),
           CheckboxListTile(
