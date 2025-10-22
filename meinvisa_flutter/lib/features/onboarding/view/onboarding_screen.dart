@@ -34,6 +34,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     }
   }
 
+  Future<void> _prevPage() async {
+    if (_currentIndex.value > 0) {
+      _controller.previousPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
   Future<void> _finishOnboarding() async {
     await ref.read(onboardingProvider.notifier).completeOnboarding();
     if (mounted) {
@@ -62,7 +71,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               width: value == index ? 16 : 8,
               height: 8,
               decoration: BoxDecoration(
-                color: value == index ? Colors.blue : Colors.grey.shade400,
+                color: value == index ? Colors.black : Colors.grey.shade400,
                 borderRadius: BorderRadius.circular(4),
               ),
             ),
@@ -85,6 +94,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         }
 
         return Scaffold(
+          appBar: AppBar(
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: _prevPage,
+            ),
+          ),
           body: SafeArea(
             child: Column(
               children: [
@@ -95,10 +110,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     onPageChanged: (index) => _currentIndex.value = index,
                     children: [
                       PassportNamePage(
-                        onNext: (value) async {
-                          await ref
-                              .read(onboardingProvider.notifier)
-                              .updateName(value);
+                        onNext: () {
                           _nextPage();
                         },
                       ),

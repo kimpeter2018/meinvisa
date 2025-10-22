@@ -41,12 +41,7 @@ class AuthViewModel extends StateNotifier<AsyncValue<Session?>> {
 
       if (!userExists) {
         await _userRepository.createUser(
-          UserModel(
-            id: user.id,
-            email: user.email!,
-            name: user.userMetadata?['name'],
-            createdAt: DateTime.now(),
-          ),
+          UserModel(id: user.id, email: user.email!, createdAt: DateTime.now()),
         );
       }
 

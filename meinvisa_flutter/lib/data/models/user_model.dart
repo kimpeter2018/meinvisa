@@ -8,7 +8,9 @@ abstract class UserModel with _$UserModel {
   const factory UserModel({
     required String id,
     required String email,
-    String? name,
+    String? firstName,
+    String? middleName,
+    String? lastName,
     String? avatarUrl,
     String? nationality,
     String? occupation,
@@ -22,7 +24,9 @@ abstract class UserModel with _$UserModel {
   factory UserModel.empty() => const UserModel(
     id: '',
     email: '',
-    name: null,
+    firstName: null,
+    middleName: null,
+    lastName: null,
     avatarUrl: null,
     nationality: null,
     occupation: null,

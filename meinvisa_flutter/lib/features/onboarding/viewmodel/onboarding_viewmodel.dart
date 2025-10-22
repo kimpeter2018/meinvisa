@@ -33,9 +33,17 @@ class OnboardingNotifier extends AutoDisposeAsyncNotifier<UserModel?> {
   // -------------------------
   // UPDATE FIELDS DURING ONBOARDING
   // -------------------------
-  Future<void> updateName(String name) async {
+  Future<void> updateName(
+    String firstName,
+    String? middleName,
+    String lastName,
+  ) async {
     final current = state.value!;
-    final updated = current.copyWith(name: name);
+    final updated = current.copyWith(
+      firstName: firstName,
+      middleName: middleName,
+      lastName: lastName,
+    );
     state = AsyncValue.data(updated);
     await _onboardingRepository.saveDraft(updated);
   }
