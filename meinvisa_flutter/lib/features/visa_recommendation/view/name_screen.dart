@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:meinvisa/data/models/user_model.dart';
+import 'package:meinvisa/data/models/user_model/user_model.dart';
 import 'package:meinvisa/data/providers/visa_recommendation_provider.dart';
 
 class PassportNamePage extends ConsumerStatefulWidget {
@@ -47,9 +47,9 @@ class _PassportNamePageState extends ConsumerState<PassportNamePage> {
       return;
     }
 
-    await ref
-        .read(visaRecommendationProvider.notifier)
-        .updateName(first, middle.isNotEmpty ? middle : null, last);
+    // await ref
+    //     .read(visaRecommendationProvider.notifier)
+    //     .updateName(first, middle.isNotEmpty ? middle : null, last);
 
     widget.onNext();
   }

@@ -12,9 +12,9 @@ abstract class UserModel with _$UserModel {
     String? middleName,
     String? lastName,
     String? avatarUrl,
-    String? nationality,
-    String? occupation,
-    String? purposeOfStay,
+    // String? nationality,
+    // String? occupation,
+    // String? purposeOfStay,
     DateTime? createdAt,
   }) = _UserModel;
 
@@ -28,9 +28,9 @@ abstract class UserModel with _$UserModel {
     middleName: null,
     lastName: null,
     avatarUrl: null,
-    nationality: null,
-    occupation: null,
-    purposeOfStay: null,
+    // nationality: null,
+    // occupation: null,
+    // purposeOfStay: null,
     createdAt: null,
   );
 }

@@ -13,9 +13,6 @@ _UserModel _$UserModelFromJson(Map<String, dynamic> json) => _UserModel(
   middleName: json['middle_name'] as String?,
   lastName: json['last_name'] as String?,
   avatarUrl: json['avatar_url'] as String?,
-  nationality: json['nationality'] as String?,
-  occupation: json['occupation'] as String?,
-  purposeOfStay: json['purpose_of_stay'] as String?,
   createdAt: json['created_at'] == null
       ? null
       : DateTime.parse(json['created_at'] as String),
@@ -29,8 +26,5 @@ Map<String, dynamic> _$UserModelToJson(_UserModel instance) =>
       'middle_name': instance.middleName,
       'last_name': instance.lastName,
       'avatar_url': instance.avatarUrl,
-      'nationality': instance.nationality,
-      'occupation': instance.occupation,
-      'purpose_of_stay': instance.purposeOfStay,
       'created_at': instance.createdAt?.toIso8601String(),
     };
