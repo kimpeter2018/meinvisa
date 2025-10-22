@@ -1,13 +1,19 @@
-import 'package:meinvisa/core/providers/user_provider.dart';
 import 'package:meinvisa/core/utils/validators.dart';
+import 'package:meinvisa/data/providers/user_provider.dart';
+import 'package:meinvisa/data/repositories/user_repository.dart';
+import 'package:meinvisa/features/auth/view/email_confirmation_screen.dart';
 import 'package:meinvisa/features/auth/view/signup_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/providers/auth_provider.dart';
+import 'package:meinvisa/features/auth/viewmodel/auth_viewmodel.dart';
+import 'package:meinvisa/features/auth/widgets/auth_dialog';
+import 'package:meinvisa/features/home/view/home_layout.dart';
+import '../../../data/providers/auth_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
+  static const routeName = '/login';
 
   @override
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
@@ -23,6 +29,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _emailLocked = false;
   bool _isEmailLoading = false;
   bool _isGoogleLoading = false;
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
@@ -40,73 +47,95 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _showPasswordField = true;
     });
 
-    if (_showPasswordField) {
-      FocusScope.of(context).requestFocus(_passwordFocusNode);
-    }
+    FocusScope.of(context).requestFocus(_passwordFocusNode);
   }
 
   Future<void> _submitEmailPassword() async {
+    setState(() => _isEmailLoading = true);
+
     if (!_formKey.currentState!.validate()) return;
 
     final email = _emailController.text.trim();
     final password = _passwordController.text;
 
-    setState(() => _isEmailLoading = true);
-
     try {
-      await ref
+      final confirmed = await ref
           .read(authViewModelProvider.notifier)
           .signInWithEmail(email, password);
-    } catch (e) {
-      _showAuthErrorDialog(e.toString());
+
+      if (!mounted) return;
+
+      if (confirmed) {
+        context.go(HomeLayout.routeName);
+      }
+    } on EmailNotConfirmedException {
+      showAuthDialog(
+        context: context,
+        title: "Confirm Your Email",
+        content: 'Your email is not confirmed yet. Please check your inbox.',
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              await ref
+                  .read(authViewModelProvider.notifier)
+                  .resendVerificationEmail(email);
+              if (mounted) {
+                context.go(
+                  EmailConfirmationScreen.routeName,
+                  extra: {'email': email, 'password': password},
+                );
+              }
+            },
+            child: const Text("Confirm Email"),
+          ),
+        ],
+      );
+    } on AuthFailedException catch (e) {
+      showAuthDialog(
+        context: context,
+        title: "Authentication Failed",
+        content: e.message,
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text("Try Again"),
+          ),
+        ],
+      );
     } finally {
-      if (mounted) context.go('/home');
+      if (mounted) setState(() => _isEmailLoading = false);
     }
   }
 
   Future<void> _signinWithGoogle() async {
     setState(() => _isGoogleLoading = true);
-    try {
-      await ref.read(authViewModelProvider.notifier).signInWithGoogle();
-    } catch (e) {
-      _showAuthErrorDialog(e.toString());
-    } finally {
-      if (mounted) {
-        context.go('/home');
-      }
-    }
-  }
 
-  void _showAuthErrorDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("Authentication Failed"),
-        content: const Text("Invalid credentials or account not found."),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              setState(() {
-                _showPasswordField = true;
-                _emailLocked = true;
-              });
-            },
-            child: const Text("Try Again"),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SignupScreen()),
-              );
-            },
-            child: const Text("Sign Up"),
-          ),
-        ],
-      ),
-    );
+    try {
+      final isFirstLogin = await ref
+          .read(authViewModelProvider.notifier)
+          .signInWithGoogle();
+
+      if (!mounted) return;
+
+      if (isFirstLogin) {
+        context.go('/onboarding'); // navigate to OnboardingScreen
+      } else {
+        context.go(HomeLayout.routeName); // existing user
+      }
+    } catch (e) {
+      showAuthDialog(
+        context: context,
+        title: "Google Sign-In Failed",
+        content: e.toString(),
+      );
+    } finally {
+      if (mounted) setState(() => _isGoogleLoading = false);
+    }
   }
 
   @override
@@ -154,9 +183,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   TextFormField(
                     controller: _passwordController,
                     cursorColor: Colors.black,
-                    decoration: const InputDecoration(labelText: 'Password'),
+                    decoration: InputDecoration(
+                      labelText: 'Password',
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscurePassword
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                        ),
+                        onPressed: () => setState(
+                          () => _obscurePassword = !_obscurePassword,
+                        ),
+                      ),
+                    ),
                     focusNode: _passwordFocusNode,
-                    obscureText: true,
+                    obscureText: _obscurePassword,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Please enter your password';
@@ -186,7 +227,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                 const SizedBox(height: 24),
                 if (_isEmailLoading)
-                  const CircularProgressIndicator(color: Colors.black)
+                  Center(
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(color: Colors.black),
+                    ),
+                  )
                 else
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
@@ -239,12 +286,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     const Text("Don't have an account?"),
                     TextButton(
                       onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const SignupScreen(),
-                          ),
-                        );
+                        context.push(SignupScreen.routeName);
                       },
                       child: const Text(
                         "Sign Up",

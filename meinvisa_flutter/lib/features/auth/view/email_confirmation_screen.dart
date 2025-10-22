@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:meinvisa/core/providers/auth_provider.dart';
+import 'package:meinvisa/data/providers/auth_provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:meinvisa/features/onboarding/view/onboarding_screen.dart';
 
 class EmailConfirmationScreen extends ConsumerStatefulWidget {
+  static const routeName = '/email-confirmation';
+
   final String email;
   final String password; // Keep the password temporarily to retry login
 
@@ -23,20 +26,17 @@ class _EmailConfirmationScreenState
   bool _isLoading = false;
 
   Future<void> _resendEmail() async {
-    setState(() => _isLoading = true);
     try {
       await ref
           .read(authViewModelProvider.notifier)
           .resendVerificationEmail(widget.email);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Verification email resent.")),
+        const SnackBar(content: Text('Verification email resent!')),
       );
     } catch (e) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text("Error: $e")));
-    } finally {
-      setState(() => _isLoading = false);
+      ).showSnackBar(SnackBar(content: Text('Failed to resend: $e')));
     }
   }
 
@@ -44,21 +44,11 @@ class _EmailConfirmationScreenState
     setState(() => _isLoading = true);
 
     try {
-      final confirmed = await ref
+      await ref
           .read(authViewModelProvider.notifier)
-          .signInWithEmail(widget.email, widget.password);
+          .handleEmailConfirmation(widget.email, widget.password);
 
-      if (confirmed) {
-        // Create user record in the database
-        await ref
-            .read(authViewModelProvider.notifier)
-            .createUserRecord(widget.email.split('@').first, widget.email);
-        if (mounted) context.go('/home');
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Email not confirmed yet.")),
-        );
-      }
+      if (mounted) context.go(OnboardingScreen.routeName);
     } catch (e) {
       ScaffoldMessenger.of(
         context,
@@ -74,12 +64,6 @@ class _EmailConfirmationScreenState
 
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(
-        title: const Text("Confirm Your Email"),
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-        elevation: 0,
-      ),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -88,7 +72,7 @@ class _EmailConfirmationScreenState
             Icon(Icons.mark_email_unread, size: 64, color: Colors.white),
             const SizedBox(height: 24),
             Text(
-              "Check your email",
+              "Check your email at ${widget.email}",
               style: textTheme.headlineSmall?.copyWith(color: Colors.white),
               textAlign: TextAlign.center,
             ),

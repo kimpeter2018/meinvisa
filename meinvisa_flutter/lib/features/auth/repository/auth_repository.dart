@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:meinvisa/core/models/user_model.dart';
+import 'package:meinvisa/data/models/user_model.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -45,15 +45,6 @@ class AuthRepository {
         throw 'No ID Token found.';
       }
 
-      // Check if user record exists in 'users' table
-      if (await userExists(_client.auth.currentUser!.id)) {
-        // First time sign-in, create user record
-        await createUserRecord(
-          _client.auth.currentUser!.userMetadata?['name'] ?? '',
-          _client.auth.currentUser!.userMetadata?['email'],
-        );
-      }
-
       await _client.auth.signInWithIdToken(
         provider: OAuthProvider.google,
         idToken: idToken,
@@ -93,51 +84,15 @@ class AuthRepository {
     return response.user;
   }
 
-  // Returns true if user exists
-  Future<bool> doesEmailExist(String email) async {
-    final response = await _client
-        .from('users') // or your auth table
-        .select('id')
-        .eq('email', email)
-        .maybeSingle();
-
-    return response != null;
-  }
-
   Future<bool> checkEmailConfirmed() async {
     await _client.auth.refreshSession(); // refresh user state
-    print(
-      "Email Confirmed at = ${_client.auth.currentUser?.emailConfirmedAt.toString()}",
-    );
+
     final user = _client.auth.currentUser;
     return user?.emailConfirmedAt != null;
   }
 
   Future<void> resendVerificationEmail(String email) async {
     await _client.auth.resend(type: OtpType.signup, email: email);
-  }
-
-  Future<bool> userExists(String userId) async {
-    final response = await _client
-        .from('users')
-        .select('id')
-        .eq('id', userId)
-        .maybeSingle();
-    return response != null;
-  }
-
-  Future<void> createUserRecord(String name, String email) async {
-    final userId = _client.auth.currentUser!.id;
-
-    final user = UserModel(
-      id: userId,
-      email: email,
-      name: name,
-      avatarUrl: null,
-      createdAt: DateTime.now(),
-    );
-
-    await _client.from('users').insert(user.toJson());
   }
 
   Future<void> refreshSession() async {
