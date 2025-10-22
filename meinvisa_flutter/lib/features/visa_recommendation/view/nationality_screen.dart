@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:country_picker/country_picker.dart';
-import 'package:meinvisa/data/providers/onboarding_provider.dart';
+import 'package:meinvisa/data/providers/visa_recommendation_provider.dart';
 
 class PassportNationalityPage extends ConsumerStatefulWidget {
   final ValueChanged<String?> onNext;

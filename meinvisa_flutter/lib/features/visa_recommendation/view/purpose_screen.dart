@@ -1,23 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:meinvisa/data/providers/onboarding_provider.dart';
+import 'package:meinvisa/data/providers/visa_recommendation_provider.dart';
 
-class OccupationPage extends ConsumerStatefulWidget {
+class PurposeOfStayPage extends ConsumerStatefulWidget {
   final ValueChanged<String?> onNext;
-  const OccupationPage({super.key, required this.onNext});
+  const PurposeOfStayPage({super.key, required this.onNext});
 
   @override
-  ConsumerState<OccupationPage> createState() => _OccupationPageState();
+  ConsumerState<PurposeOfStayPage> createState() => _PurposeOfStayPageState();
 }
 
-class _OccupationPageState extends ConsumerState<OccupationPage> {
+class _PurposeOfStayPageState extends ConsumerState<PurposeOfStayPage> {
   late final TextEditingController _controller;
 
   @override
   void initState() {
     super.initState();
-    final occupation = ref.read(onboardingProvider).value?.occupation ?? '';
-    _controller = TextEditingController(text: occupation);
+    final purpose =
+        ref.read(visaRecommendationProvider).value?.purposeOfStay ?? '';
+    _controller = TextEditingController(text: purpose);
   }
 
   @override
@@ -27,9 +28,12 @@ class _OccupationPageState extends ConsumerState<OccupationPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text("What's your occupation?", style: TextStyle(fontSize: 22)),
+          const Text(
+            "Purpose of stay in Germany?",
+            style: TextStyle(fontSize: 22),
+          ),
           const SizedBox(height: 12),
-          TextField(controller: _controller),
+          TextField(controller: _controller, maxLines: 3),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -40,7 +44,7 @@ class _OccupationPageState extends ConsumerState<OccupationPage> {
               ),
               ElevatedButton(
                 onPressed: () => widget.onNext(_controller.text),
-                child: const Text("Next"),
+                child: const Text("Finish"),
               ),
             ],
           ),

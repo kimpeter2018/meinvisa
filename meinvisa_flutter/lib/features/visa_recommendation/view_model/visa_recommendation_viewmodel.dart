@@ -1,18 +1,20 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:meinvisa/data/models/user_model.dart';
-import 'package:meinvisa/data/providers/onboarding_provider.dart';
+import 'package:meinvisa/data/providers/visa_recommendation_provider.dart';
 import 'package:meinvisa/data/repositories/user_repository.dart';
-import 'package:meinvisa/features/onboarding/repository/onboarding_repository.dart';
+import 'package:meinvisa/features/visa_recommendation/repository/visa_recommendation_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class OnboardingNotifier extends AutoDisposeAsyncNotifier<UserModel?> {
-  late final OnboardingRepository _onboardingRepository;
+class VisaRecommendationNotifier extends AutoDisposeAsyncNotifier<UserModel?> {
+  late final VisaRecommendationRepository _visaRecommendationRepository;
   late final UserRepository _userRepository;
 
   @override
   Future<UserModel?> build() async {
-    _onboardingRepository = ref.read(onboardingRepositoryProvider);
+    _visaRecommendationRepository = ref.read(
+      visaRecommendationRepositoryProvider,
+    );
     _userRepository = ref.read(userRepositoryProvider);
 
     // Get current logged-in user ID
@@ -24,7 +26,7 @@ class OnboardingNotifier extends AutoDisposeAsyncNotifier<UserModel?> {
 
     // Save initial draft in onboarding repository
     if (existingUser != null) {
-      await _onboardingRepository.saveDraft(existingUser);
+      await _visaRecommendationRepository.saveDraft(existingUser);
     }
 
     return existingUser;
@@ -45,45 +47,45 @@ class OnboardingNotifier extends AutoDisposeAsyncNotifier<UserModel?> {
       lastName: lastName,
     );
     state = AsyncValue.data(updated);
-    await _onboardingRepository.saveDraft(updated);
+    await _visaRecommendationRepository.saveDraft(updated);
   }
 
   Future<void> updateAvatar(String avatarUrl) async {
     final current = state.value!;
     final updated = current.copyWith(avatarUrl: avatarUrl);
     state = AsyncValue.data(updated);
-    await _onboardingRepository.saveDraft(updated);
+    await _visaRecommendationRepository.saveDraft(updated);
   }
 
   Future<void> updateNationality(String nationality) async {
     final current = state.value!;
     final updated = current.copyWith(nationality: nationality);
     state = AsyncValue.data(updated);
-    await _onboardingRepository.saveDraft(updated);
+    await _visaRecommendationRepository.saveDraft(updated);
   }
 
   Future<void> updateOccupation(String occupation) async {
     final current = state.value!;
     final updated = current.copyWith(occupation: occupation);
     state = AsyncValue.data(updated);
-    await _onboardingRepository.saveDraft(updated);
+    await _visaRecommendationRepository.saveDraft(updated);
   }
 
   Future<void> updatePurpose(String purpose) async {
     final current = state.value!;
     final updated = current.copyWith(purposeOfStay: purpose);
     state = AsyncValue.data(updated);
-    await _onboardingRepository.saveDraft(updated);
+    await _visaRecommendationRepository.saveDraft(updated);
   }
 
   // -------------------------
-  // COMPLETE ONBOARDING
+  // COMPLETE SUBMITION
   // -------------------------
-  Future<void> completeOnboarding() async {
+  Future<void> handleSubmit() async {
     final user = state.value;
 
     if (user != null) {
-      await _onboardingRepository.completeOnboarding(user);
+      await _visaRecommendationRepository.filterVisa();
       final prefs = await SharedPreferences.getInstance();
       final userId = user.id;
 

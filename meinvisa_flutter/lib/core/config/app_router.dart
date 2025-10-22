@@ -8,6 +8,7 @@ import 'package:meinvisa/features/home/view/home_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:meinvisa/features/onboarding/view/onboarding_screen.dart';
+import 'package:meinvisa/features/visa_recommendation/view/visa_recommendation_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -51,6 +52,10 @@ final router = GoRouter(
     GoRoute(
       path: OnboardingScreen.routeName,
       builder: (context, state) => OnboardingScreen(),
+    ),
+    GoRoute(
+      path: VisaRecommendationScreen.routeName,
+      builder: (context, state) => VisaRecommendationScreen(),
     ),
     if (kDebugMode)
       GoRoute(

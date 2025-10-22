@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:meinvisa/data/models/user_model.dart';
-import 'package:meinvisa/data/providers/onboarding_provider.dart';
+import 'package:meinvisa/data/providers/visa_recommendation_provider.dart';
 
 class PassportNamePage extends ConsumerStatefulWidget {
   final VoidCallback onNext;
@@ -19,7 +19,8 @@ class _PassportNamePageState extends ConsumerState<PassportNamePage> {
   @override
   void initState() {
     super.initState();
-    final user = ref.read(onboardingProvider).value ?? UserModel.empty();
+    final user =
+        ref.read(visaRecommendationProvider).value ?? UserModel.empty();
 
     _firstNameController = TextEditingController(text: user.firstName ?? '');
     _middleNameController = TextEditingController(text: user.middleName ?? '');
@@ -47,7 +48,7 @@ class _PassportNamePageState extends ConsumerState<PassportNamePage> {
     }
 
     await ref
-        .read(onboardingProvider.notifier)
+        .read(visaRecommendationProvider.notifier)
         .updateName(first, middle.isNotEmpty ? middle : null, last);
 
     widget.onNext();

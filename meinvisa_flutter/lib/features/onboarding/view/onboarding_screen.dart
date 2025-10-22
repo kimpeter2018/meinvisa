@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:meinvisa/data/providers/onboarding_provider.dart';
+import 'package:meinvisa/data/providers/user_provider.dart';
 import 'package:meinvisa/features/home/view/home_layout.dart';
-import 'package:meinvisa/features/onboarding/view/name_screen.dart';
-import 'package:meinvisa/features/onboarding/view/nationality_screen.dart';
-import 'package:meinvisa/features/onboarding/view/occupation_screen.dart';
-import 'package:meinvisa/features/onboarding/view/purpose_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   static const routeName = '/onboarding';
@@ -30,7 +27,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         curve: Curves.easeInOut,
       );
     } else {
-      await _finishOnboarding();
+      await _completeOnboarding();
     }
   }
 
@@ -43,8 +40,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     }
   }
 
-  Future<void> _finishOnboarding() async {
-    await ref.read(onboardingProvider.notifier).completeOnboarding();
+  Future<void> _completeOnboarding() async {
+    final user = ref.read(userProvider).value;
+
+    final prefs = await SharedPreferences.getInstance();
+    final userId = user!.id;
+
+    await prefs.setBool('onboarding_completed_$userId', true);
+
     if (mounted) {
       context.pushReplacementNamed(HomeLayout.routeName);
     }
@@ -83,9 +86,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final onboardingAsync = ref.watch(onboardingProvider);
+    final userAsync = ref.watch(userProvider);
 
-    return onboardingAsync.when(
+    return userAsync.when(
       data: (user) {
         if (user == null) {
           return const Scaffold(
@@ -108,37 +111,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     controller: _controller,
                     physics: const NeverScrollableScrollPhysics(),
                     onPageChanged: (index) => _currentIndex.value = index,
-                    children: [
-                      PassportNamePage(
-                        onNext: () {
-                          _nextPage();
-                        },
-                      ),
-                      PassportNationalityPage(
-                        onNext: (value) async {
-                          await ref
-                              .read(onboardingProvider.notifier)
-                              .updateNationality(value ?? '');
-                          _nextPage();
-                        },
-                      ),
-                      OccupationPage(
-                        onNext: (value) async {
-                          await ref
-                              .read(onboardingProvider.notifier)
-                              .updateOccupation(value ?? '');
-                          _nextPage();
-                        },
-                      ),
-                      PurposeOfStayPage(
-                        onNext: (value) async {
-                          await ref
-                              .read(onboardingProvider.notifier)
-                              .updatePurpose(value ?? '');
-                          _nextPage();
-                        },
-                      ),
-                    ],
+                    children: [],
                   ),
                 ),
                 const SizedBox(height: 16),
