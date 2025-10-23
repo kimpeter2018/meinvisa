@@ -1,89 +1,58 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:meinvisa/data/models/user_model/user_model.dart';
+import 'package:meinvisa/core/services/draft_service.dart';
 import 'package:meinvisa/data/models/visa_eligibility_result_model/visa_eligibility_result_model.dart';
 import 'package:meinvisa/data/models/visa_questionnaire_model/visa_questionnaire_model.dart';
 import 'package:meinvisa/data/providers/visa_recommendation_provider.dart';
-import 'package:meinvisa/data/repositories/user_repository.dart';
 import 'package:meinvisa/features/visa_recommendation/repository/visa_recommendation_repository.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
-class VisaRecommendationNotifier extends AutoDisposeAsyncNotifier<UserModel?> {
+class VisaRecommendationNotifier
+    extends AutoDisposeAsyncNotifier<VisaQuestionnaire?> {
   late final VisaRecommendationRepository _visaRepository;
-  late final UserRepository _userRepository;
+  final DraftService _draftService = DraftService();
 
   @override
-  Future<UserModel?> build() async {
+  Future<VisaQuestionnaire?> build() async {
     _visaRepository = ref.read(visaRecommendationRepositoryProvider);
-    _userRepository = ref.read(userRepositoryProvider);
 
-    final sessionUser = Supabase.instance.client.auth.currentUser;
-    if (sessionUser == null) return null;
+    // Load from cache if exists
+    final cached = await _draftService.loadDraft();
+    if (cached != null) return VisaQuestionnaire.fromJson(cached);
 
-    final existingUser = await _userRepository.getUser(sessionUser.id);
-    return existingUser;
+    // Otherwise, load from repo (if any)
+    return _visaRepository.getDraft();
   }
 
   VisaQuestionnaire? getDraft() => _visaRepository.getDraft();
 
   /// Save questionnaire response as a draft
   Future<void> saveUserResponse(VisaQuestionnaire questionnaire) async {
+    state = AsyncValue.data(questionnaire);
     await _visaRepository.saveDraft(questionnaire);
+    await _draftService.saveDraft(questionnaire.toJson());
   }
 
-  /// Submits the final questionnaire and retrieves the eligibility result
+  /// Load locally cached draft
+  Future<void> loadDraft() async {
+    final draft = await _draftService.loadDraft();
+    if (draft != null) {
+      state = AsyncValue.data(VisaQuestionnaire.fromJson(draft));
+    }
+  }
+
+  /// Submit questionnaire and get visa eligibility result
   Future<VisaEligibilityResult> handleSubmit() async {
+    final questionnaire = state.value;
+    if (questionnaire == null) {
+      throw Exception('No questionnaire data to submit.');
+    }
     final result = await _visaRepository.filterVisa();
     return result;
   }
 
   /// Clears all saved responses
-  void clearResponses() {
+  Future<void> clearResponses() async {
+    state = const AsyncValue.data(null);
     _visaRepository.clearDraft();
+    await _draftService.clearDraft();
   }
-  // -------------------------
-  // UPDATE FIELDS DURING ONBOARDING
-  // -------------------------
-  // Future<void> updateName(
-  //   String firstName,
-  //   String? middleName,
-  //   String lastName,
-  // ) async {
-  //   final current = state.value!;
-  //   final updated = current.copyWith(
-  //     firstName: firstName,
-  //     middleName: middleName,
-  //     lastName: lastName,
-  //   );
-  //   state = AsyncValue.data(updated);
-  //   await _visaRepository.saveDraft(updated);
-  // }
-
-  // Future<void> updateAvatar(String avatarUrl) async {
-  //   final current = state.value!;
-  //   final updated = current.copyWith(avatarUrl: avatarUrl);
-  //   state = AsyncValue.data(updated);
-  //   await _visaRepository.saveDraft(updated);
-  // }
-
-  // Future<void> updateNationality(String nationality) async {
-  //   final current = state.value!;
-  //   final updated = current.copyWith(nationality: nationality);
-  //   state = AsyncValue.data(updated);
-  //   await _visaRecommendationRepository.saveDraft(updated);
-  // }
-
-  // Future<void> updateOccupation(String occupation) async {
-  //   final current = state.value!;
-  //   final updated = current.copyWith(occupation: occupation);
-  //   state = AsyncValue.data(updated);
-  //   await _visaRecommendationRepository.saveDraft(updated);
-  // }
-
-  // Future<void> updatePurpose(String purpose) async {
-  //   final current = state.value!;
-  //   final updated = current.copyWith(purposeOfStay: purpose);
-  //   state = AsyncValue.data(updated);
-  //   await _visaRecommendationRepository.saveDraft(updated);
-  // }
 }

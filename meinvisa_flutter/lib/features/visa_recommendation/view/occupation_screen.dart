@@ -25,6 +25,10 @@ class _OccupationPageState extends ConsumerState<OccupationPage> {
     'Designer': 'designer',
     'Scientist': 'scientist',
     'Manager': 'manager',
+    'Artist': 'artist',
+    'Accountant': 'accountant',
+    'Lawyer': 'lawyer',
+    'Pharmacist': 'pharmacist',
   };
 
   void _showOccupationPicker() {
@@ -39,7 +43,7 @@ class _OccupationPageState extends ConsumerState<OccupationPage> {
         return StatefulBuilder(
           builder: (context, setModalState) {
             return Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 32, 16, 16),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -52,7 +56,6 @@ class _OccupationPageState extends ConsumerState<OccupationPage> {
                       _searchQuery = val;
                     }),
                   ),
-                  const SizedBox(height: 8),
                   Expanded(
                     child: ListView.builder(
                       itemCount: filtered.length,
@@ -82,7 +85,8 @@ class _OccupationPageState extends ConsumerState<OccupationPage> {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Text('Select your occupation', style: TextStyle(fontSize: 20)),
           const SizedBox(height: 16),
@@ -111,7 +115,7 @@ class _OccupationPageState extends ConsumerState<OccupationPage> {
               ),
             ),
           ),
-          const Spacer(),
+          SizedBox(height: 32),
           ElevatedButton(
             onPressed: _selectedOccupation == null
                 ? null

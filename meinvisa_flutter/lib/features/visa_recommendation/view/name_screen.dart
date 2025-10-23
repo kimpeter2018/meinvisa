@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:meinvisa/data/models/user_model/user_model.dart';
-import 'package:meinvisa/data/providers/visa_recommendation_provider.dart';
+import 'package:meinvisa/data/providers/user_provider.dart';
 
 class PassportNamePage extends ConsumerStatefulWidget {
   final VoidCallback onNext;
@@ -19,8 +19,7 @@ class _PassportNamePageState extends ConsumerState<PassportNamePage> {
   @override
   void initState() {
     super.initState();
-    final user =
-        ref.read(visaRecommendationProvider).value ?? UserModel.empty();
+    final user = ref.read(userProvider).value ?? UserModel.empty();
 
     _firstNameController = TextEditingController(text: user.firstName ?? '');
     _middleNameController = TextEditingController(text: user.middleName ?? '');
@@ -47,68 +46,66 @@ class _PassportNamePageState extends ConsumerState<PassportNamePage> {
       return;
     }
 
-    // await ref
-    //     .read(visaRecommendationProvider.notifier)
-    //     .updateName(first, middle.isNotEmpty ? middle : null, last);
-
     widget.onNext();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "What's your full name?",
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            "Please enter your name exactly as it appears on your passport.",
-            style: TextStyle(color: Colors.grey, fontSize: 14),
-          ),
-          const SizedBox(height: 24),
-          TextField(
-            controller: _firstNameController,
-            decoration: const InputDecoration(
-              labelText: 'First name',
-              border: OutlineInputBorder(),
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "What's your full name?",
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
             ),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _middleNameController,
-            decoration: const InputDecoration(
-              labelText: 'Middle name (optional)',
-              border: OutlineInputBorder(),
+            const SizedBox(height: 8),
+            const Text(
+              "Please enter your name exactly as it appears on your passport.",
+              style: TextStyle(color: Colors.grey, fontSize: 14),
             ),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _lastNameController,
-            decoration: const InputDecoration(
-              labelText: 'Last name',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 24),
-          Center(
-            child: ElevatedButton(
-              onPressed: _onNextPressed,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 40,
-                  vertical: 14,
-                ),
+            const SizedBox(height: 24),
+            TextField(
+              controller: _firstNameController,
+              decoration: const InputDecoration(
+                labelText: 'First name',
+                border: OutlineInputBorder(),
               ),
-              child: const Text("Next", style: TextStyle(fontSize: 16)),
             ),
-          ),
-        ],
+            const SizedBox(height: 16),
+            TextField(
+              controller: _middleNameController,
+              decoration: const InputDecoration(
+                labelText: 'Middle name (optional)',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _lastNameController,
+              decoration: const InputDecoration(
+                labelText: 'Last name',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Center(
+              child: ElevatedButton(
+                onPressed: _onNextPressed,
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 40,
+                    vertical: 14,
+                  ),
+                ),
+                child: const Text("Next", style: TextStyle(fontSize: 16)),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:meinvisa/core/debug/debug_logger.dart';
 import 'package:meinvisa/data/providers/visa_recommendation_provider.dart';
-import 'package:meinvisa/features/home/view/home_layout.dart';
 import 'package:meinvisa/features/visa_recommendation/view/name_screen.dart';
 import 'package:meinvisa/features/visa_recommendation/view/nationality_screen.dart';
 import 'package:meinvisa/features/visa_recommendation/view/occupation_screen.dart';
+import 'package:meinvisa/features/visa_recommendation/view/result_screen.dart';
 import 'package:meinvisa/features/visa_recommendation/view/salary_recognition_page.dart';
 
 class VisaRecommendationScreen extends ConsumerStatefulWidget {
@@ -51,8 +50,7 @@ class _VisaRecommendationScreenState
         .read(visaRecommendationProvider.notifier)
         .handleSubmit();
     if (mounted) {
-      context.pushReplacement(HomeLayout.routeName);
-      DebugLogger().log('Received Visa Recommendation: $response');
+      context.pushReplacement(VisaResultScreen.routeName, extra: response);
     }
   }
 
