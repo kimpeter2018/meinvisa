@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$VisaQuestion {
 
- String get id; String get category;@JsonKey(name: 'question_text') String get questionText;@JsonKey(name: 'field_key') String get fieldKey;@JsonKey(name: 'question_type') String get questionType;@JsonKey(name: 'options_source') String? get optionsSource;@JsonKey(name: 'required') bool? get isRequired;@JsonKey(name: 'order_index') int? get orderIndex;@JsonKey(name: 'created_at') DateTime? get createdAt;@JsonKey(name: 'updated_at') DateTime? get updatedAt;
+ String get id; String get questionText;@QuestionTypeConverter() QuestionType get questionType; String get category; String? get optionsSource; List<String> get options;
 /// Create a copy of VisaQuestion
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $VisaQuestionCopyWith<VisaQuestion> get copyWith => _$VisaQuestionCopyWithImpl<V
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is VisaQuestion&&(identical(other.id, id) || other.id == id)&&(identical(other.category, category) || other.category == category)&&(identical(other.questionText, questionText) || other.questionText == questionText)&&(identical(other.fieldKey, fieldKey) || other.fieldKey == fieldKey)&&(identical(other.questionType, questionType) || other.questionType == questionType)&&(identical(other.optionsSource, optionsSource) || other.optionsSource == optionsSource)&&(identical(other.isRequired, isRequired) || other.isRequired == isRequired)&&(identical(other.orderIndex, orderIndex) || other.orderIndex == orderIndex)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is VisaQuestion&&(identical(other.id, id) || other.id == id)&&(identical(other.questionText, questionText) || other.questionText == questionText)&&(identical(other.questionType, questionType) || other.questionType == questionType)&&(identical(other.category, category) || other.category == category)&&(identical(other.optionsSource, optionsSource) || other.optionsSource == optionsSource)&&const DeepCollectionEquality().equals(other.options, options));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,category,questionText,fieldKey,questionType,optionsSource,isRequired,orderIndex,createdAt,updatedAt);
+int get hashCode => Object.hash(runtimeType,id,questionText,questionType,category,optionsSource,const DeepCollectionEquality().hash(options));
 
 @override
 String toString() {
-  return 'VisaQuestion(id: $id, category: $category, questionText: $questionText, fieldKey: $fieldKey, questionType: $questionType, optionsSource: $optionsSource, isRequired: $isRequired, orderIndex: $orderIndex, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'VisaQuestion(id: $id, questionText: $questionText, questionType: $questionType, category: $category, optionsSource: $optionsSource, options: $options)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $VisaQuestionCopyWith<$Res>  {
   factory $VisaQuestionCopyWith(VisaQuestion value, $Res Function(VisaQuestion) _then) = _$VisaQuestionCopyWithImpl;
 @useResult
 $Res call({
- String id, String category,@JsonKey(name: 'question_text') String questionText,@JsonKey(name: 'field_key') String fieldKey,@JsonKey(name: 'question_type') String questionType,@JsonKey(name: 'options_source') String? optionsSource,@JsonKey(name: 'required') bool? isRequired,@JsonKey(name: 'order_index') int? orderIndex,@JsonKey(name: 'created_at') DateTime? createdAt,@JsonKey(name: 'updated_at') DateTime? updatedAt
+ String id, String questionText,@QuestionTypeConverter() QuestionType questionType, String category, String? optionsSource, List<String> options
 });
 
 
@@ -65,19 +65,15 @@ class _$VisaQuestionCopyWithImpl<$Res>
 
 /// Create a copy of VisaQuestion
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? category = null,Object? questionText = null,Object? fieldKey = null,Object? questionType = null,Object? optionsSource = freezed,Object? isRequired = freezed,Object? orderIndex = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? questionText = null,Object? questionType = null,Object? category = null,Object? optionsSource = freezed,Object? options = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as String,category: null == category ? _self.category : category // ignore: cast_nullable_to_non_nullable
 as String,questionText: null == questionText ? _self.questionText : questionText // ignore: cast_nullable_to_non_nullable
-as String,fieldKey: null == fieldKey ? _self.fieldKey : fieldKey // ignore: cast_nullable_to_non_nullable
 as String,questionType: null == questionType ? _self.questionType : questionType // ignore: cast_nullable_to_non_nullable
+as QuestionType,category: null == category ? _self.category : category // ignore: cast_nullable_to_non_nullable
 as String,optionsSource: freezed == optionsSource ? _self.optionsSource : optionsSource // ignore: cast_nullable_to_non_nullable
-as String?,isRequired: freezed == isRequired ? _self.isRequired : isRequired // ignore: cast_nullable_to_non_nullable
-as bool?,orderIndex: freezed == orderIndex ? _self.orderIndex : orderIndex // ignore: cast_nullable_to_non_nullable
-as int?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
-as DateTime?,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
-as DateTime?,
+as String?,options: null == options ? _self.options : options // ignore: cast_nullable_to_non_nullable
+as List<String>,
   ));
 }
 
@@ -162,10 +158,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String category, @JsonKey(name: 'question_text')  String questionText, @JsonKey(name: 'field_key')  String fieldKey, @JsonKey(name: 'question_type')  String questionType, @JsonKey(name: 'options_source')  String? optionsSource, @JsonKey(name: 'required')  bool? isRequired, @JsonKey(name: 'order_index')  int? orderIndex, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String questionText, @QuestionTypeConverter()  QuestionType questionType,  String category,  String? optionsSource,  List<String> options)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _VisaQuestion() when $default != null:
-return $default(_that.id,_that.category,_that.questionText,_that.fieldKey,_that.questionType,_that.optionsSource,_that.isRequired,_that.orderIndex,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.questionText,_that.questionType,_that.category,_that.optionsSource,_that.options);case _:
   return orElse();
 
 }
@@ -183,10 +179,10 @@ return $default(_that.id,_that.category,_that.questionText,_that.fieldKey,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String category, @JsonKey(name: 'question_text')  String questionText, @JsonKey(name: 'field_key')  String fieldKey, @JsonKey(name: 'question_type')  String questionType, @JsonKey(name: 'options_source')  String? optionsSource, @JsonKey(name: 'required')  bool? isRequired, @JsonKey(name: 'order_index')  int? orderIndex, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String questionText, @QuestionTypeConverter()  QuestionType questionType,  String category,  String? optionsSource,  List<String> options)  $default,) {final _that = this;
 switch (_that) {
 case _VisaQuestion():
-return $default(_that.id,_that.category,_that.questionText,_that.fieldKey,_that.questionType,_that.optionsSource,_that.isRequired,_that.orderIndex,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.questionText,_that.questionType,_that.category,_that.optionsSource,_that.options);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -203,10 +199,10 @@ return $default(_that.id,_that.category,_that.questionText,_that.fieldKey,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String category, @JsonKey(name: 'question_text')  String questionText, @JsonKey(name: 'field_key')  String fieldKey, @JsonKey(name: 'question_type')  String questionType, @JsonKey(name: 'options_source')  String? optionsSource, @JsonKey(name: 'required')  bool? isRequired, @JsonKey(name: 'order_index')  int? orderIndex, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String questionText, @QuestionTypeConverter()  QuestionType questionType,  String category,  String? optionsSource,  List<String> options)?  $default,) {final _that = this;
 switch (_that) {
 case _VisaQuestion() when $default != null:
-return $default(_that.id,_that.category,_that.questionText,_that.fieldKey,_that.questionType,_that.optionsSource,_that.isRequired,_that.orderIndex,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.questionText,_that.questionType,_that.category,_that.optionsSource,_that.options);case _:
   return null;
 
 }
@@ -218,19 +214,21 @@ return $default(_that.id,_that.category,_that.questionText,_that.fieldKey,_that.
 @JsonSerializable()
 
 class _VisaQuestion implements VisaQuestion {
-  const _VisaQuestion({required this.id, required this.category, @JsonKey(name: 'question_text') required this.questionText, @JsonKey(name: 'field_key') required this.fieldKey, @JsonKey(name: 'question_type') required this.questionType, @JsonKey(name: 'options_source') this.optionsSource, @JsonKey(name: 'required') this.isRequired, @JsonKey(name: 'order_index') this.orderIndex, @JsonKey(name: 'created_at') this.createdAt, @JsonKey(name: 'updated_at') this.updatedAt});
+  const _VisaQuestion({required this.id, required this.questionText, @QuestionTypeConverter() required this.questionType, required this.category, this.optionsSource, final  List<String> options = const []}): _options = options;
   factory _VisaQuestion.fromJson(Map<String, dynamic> json) => _$VisaQuestionFromJson(json);
 
 @override final  String id;
+@override final  String questionText;
+@override@QuestionTypeConverter() final  QuestionType questionType;
 @override final  String category;
-@override@JsonKey(name: 'question_text') final  String questionText;
-@override@JsonKey(name: 'field_key') final  String fieldKey;
-@override@JsonKey(name: 'question_type') final  String questionType;
-@override@JsonKey(name: 'options_source') final  String? optionsSource;
-@override@JsonKey(name: 'required') final  bool? isRequired;
-@override@JsonKey(name: 'order_index') final  int? orderIndex;
-@override@JsonKey(name: 'created_at') final  DateTime? createdAt;
-@override@JsonKey(name: 'updated_at') final  DateTime? updatedAt;
+@override final  String? optionsSource;
+ final  List<String> _options;
+@override@JsonKey() List<String> get options {
+  if (_options is EqualUnmodifiableListView) return _options;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_options);
+}
+
 
 /// Create a copy of VisaQuestion
 /// with the given fields replaced by the non-null parameter values.
@@ -245,16 +243,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _VisaQuestion&&(identical(other.id, id) || other.id == id)&&(identical(other.category, category) || other.category == category)&&(identical(other.questionText, questionText) || other.questionText == questionText)&&(identical(other.fieldKey, fieldKey) || other.fieldKey == fieldKey)&&(identical(other.questionType, questionType) || other.questionType == questionType)&&(identical(other.optionsSource, optionsSource) || other.optionsSource == optionsSource)&&(identical(other.isRequired, isRequired) || other.isRequired == isRequired)&&(identical(other.orderIndex, orderIndex) || other.orderIndex == orderIndex)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _VisaQuestion&&(identical(other.id, id) || other.id == id)&&(identical(other.questionText, questionText) || other.questionText == questionText)&&(identical(other.questionType, questionType) || other.questionType == questionType)&&(identical(other.category, category) || other.category == category)&&(identical(other.optionsSource, optionsSource) || other.optionsSource == optionsSource)&&const DeepCollectionEquality().equals(other._options, _options));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,category,questionText,fieldKey,questionType,optionsSource,isRequired,orderIndex,createdAt,updatedAt);
+int get hashCode => Object.hash(runtimeType,id,questionText,questionType,category,optionsSource,const DeepCollectionEquality().hash(_options));
 
 @override
 String toString() {
-  return 'VisaQuestion(id: $id, category: $category, questionText: $questionText, fieldKey: $fieldKey, questionType: $questionType, optionsSource: $optionsSource, isRequired: $isRequired, orderIndex: $orderIndex, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'VisaQuestion(id: $id, questionText: $questionText, questionType: $questionType, category: $category, optionsSource: $optionsSource, options: $options)';
 }
 
 
@@ -265,7 +263,7 @@ abstract mixin class _$VisaQuestionCopyWith<$Res> implements $VisaQuestionCopyWi
   factory _$VisaQuestionCopyWith(_VisaQuestion value, $Res Function(_VisaQuestion) _then) = __$VisaQuestionCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String category,@JsonKey(name: 'question_text') String questionText,@JsonKey(name: 'field_key') String fieldKey,@JsonKey(name: 'question_type') String questionType,@JsonKey(name: 'options_source') String? optionsSource,@JsonKey(name: 'required') bool? isRequired,@JsonKey(name: 'order_index') int? orderIndex,@JsonKey(name: 'created_at') DateTime? createdAt,@JsonKey(name: 'updated_at') DateTime? updatedAt
+ String id, String questionText,@QuestionTypeConverter() QuestionType questionType, String category, String? optionsSource, List<String> options
 });
 
 
@@ -282,19 +280,15 @@ class __$VisaQuestionCopyWithImpl<$Res>
 
 /// Create a copy of VisaQuestion
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? category = null,Object? questionText = null,Object? fieldKey = null,Object? questionType = null,Object? optionsSource = freezed,Object? isRequired = freezed,Object? orderIndex = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? questionText = null,Object? questionType = null,Object? category = null,Object? optionsSource = freezed,Object? options = null,}) {
   return _then(_VisaQuestion(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as String,category: null == category ? _self.category : category // ignore: cast_nullable_to_non_nullable
 as String,questionText: null == questionText ? _self.questionText : questionText // ignore: cast_nullable_to_non_nullable
-as String,fieldKey: null == fieldKey ? _self.fieldKey : fieldKey // ignore: cast_nullable_to_non_nullable
 as String,questionType: null == questionType ? _self.questionType : questionType // ignore: cast_nullable_to_non_nullable
+as QuestionType,category: null == category ? _self.category : category // ignore: cast_nullable_to_non_nullable
 as String,optionsSource: freezed == optionsSource ? _self.optionsSource : optionsSource // ignore: cast_nullable_to_non_nullable
-as String?,isRequired: freezed == isRequired ? _self.isRequired : isRequired // ignore: cast_nullable_to_non_nullable
-as bool?,orderIndex: freezed == orderIndex ? _self.orderIndex : orderIndex // ignore: cast_nullable_to_non_nullable
-as int?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
-as DateTime?,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
-as DateTime?,
+as String?,options: null == options ? _self._options : options // ignore: cast_nullable_to_non_nullable
+as List<String>,
   ));
 }
 

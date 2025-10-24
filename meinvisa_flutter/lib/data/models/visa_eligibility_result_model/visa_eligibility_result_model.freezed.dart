@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$VisaEligibilityResult {
 
-@JsonKey(name: 'eligible_visas') List<EligibleVisa> get eligibleVisas;@JsonKey(name: 'ineligible_reasons') List<String> get ineligibleReasons; String get confidence;
+ List<EligibleVisa> get eligibleVisas; List<String> get ineligibleReasons; String get confidence;
 /// Create a copy of VisaEligibilityResult
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -48,7 +48,7 @@ abstract mixin class $VisaEligibilityResultCopyWith<$Res>  {
   factory $VisaEligibilityResultCopyWith(VisaEligibilityResult value, $Res Function(VisaEligibilityResult) _then) = _$VisaEligibilityResultCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(name: 'eligible_visas') List<EligibleVisa> eligibleVisas,@JsonKey(name: 'ineligible_reasons') List<String> ineligibleReasons, String confidence
+ List<EligibleVisa> eligibleVisas, List<String> ineligibleReasons, String confidence
 });
 
 
@@ -155,7 +155,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'eligible_visas')  List<EligibleVisa> eligibleVisas, @JsonKey(name: 'ineligible_reasons')  List<String> ineligibleReasons,  String confidence)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<EligibleVisa> eligibleVisas,  List<String> ineligibleReasons,  String confidence)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _VisaEligibilityResult() when $default != null:
 return $default(_that.eligibleVisas,_that.ineligibleReasons,_that.confidence);case _:
@@ -176,7 +176,7 @@ return $default(_that.eligibleVisas,_that.ineligibleReasons,_that.confidence);ca
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'eligible_visas')  List<EligibleVisa> eligibleVisas, @JsonKey(name: 'ineligible_reasons')  List<String> ineligibleReasons,  String confidence)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<EligibleVisa> eligibleVisas,  List<String> ineligibleReasons,  String confidence)  $default,) {final _that = this;
 switch (_that) {
 case _VisaEligibilityResult():
 return $default(_that.eligibleVisas,_that.ineligibleReasons,_that.confidence);case _:
@@ -196,7 +196,7 @@ return $default(_that.eligibleVisas,_that.ineligibleReasons,_that.confidence);ca
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'eligible_visas')  List<EligibleVisa> eligibleVisas, @JsonKey(name: 'ineligible_reasons')  List<String> ineligibleReasons,  String confidence)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<EligibleVisa> eligibleVisas,  List<String> ineligibleReasons,  String confidence)?  $default,) {final _that = this;
 switch (_that) {
 case _VisaEligibilityResult() when $default != null:
 return $default(_that.eligibleVisas,_that.ineligibleReasons,_that.confidence);case _:
@@ -211,18 +211,18 @@ return $default(_that.eligibleVisas,_that.ineligibleReasons,_that.confidence);ca
 @JsonSerializable()
 
 class _VisaEligibilityResult implements VisaEligibilityResult {
-  const _VisaEligibilityResult({@JsonKey(name: 'eligible_visas') required final  List<EligibleVisa> eligibleVisas, @JsonKey(name: 'ineligible_reasons') required final  List<String> ineligibleReasons, required this.confidence}): _eligibleVisas = eligibleVisas,_ineligibleReasons = ineligibleReasons;
+  const _VisaEligibilityResult({required final  List<EligibleVisa> eligibleVisas, required final  List<String> ineligibleReasons, required this.confidence}): _eligibleVisas = eligibleVisas,_ineligibleReasons = ineligibleReasons;
   factory _VisaEligibilityResult.fromJson(Map<String, dynamic> json) => _$VisaEligibilityResultFromJson(json);
 
  final  List<EligibleVisa> _eligibleVisas;
-@override@JsonKey(name: 'eligible_visas') List<EligibleVisa> get eligibleVisas {
+@override List<EligibleVisa> get eligibleVisas {
   if (_eligibleVisas is EqualUnmodifiableListView) return _eligibleVisas;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_eligibleVisas);
 }
 
  final  List<String> _ineligibleReasons;
-@override@JsonKey(name: 'ineligible_reasons') List<String> get ineligibleReasons {
+@override List<String> get ineligibleReasons {
   if (_ineligibleReasons is EqualUnmodifiableListView) return _ineligibleReasons;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_ineligibleReasons);
@@ -263,7 +263,7 @@ abstract mixin class _$VisaEligibilityResultCopyWith<$Res> implements $VisaEligi
   factory _$VisaEligibilityResultCopyWith(_VisaEligibilityResult value, $Res Function(_VisaEligibilityResult) _then) = __$VisaEligibilityResultCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(name: 'eligible_visas') List<EligibleVisa> eligibleVisas,@JsonKey(name: 'ineligible_reasons') List<String> ineligibleReasons, String confidence
+ List<EligibleVisa> eligibleVisas, List<String> ineligibleReasons, String confidence
 });
 
 
@@ -296,7 +296,7 @@ as String,
 /// @nodoc
 mixin _$EligibleVisa {
 
-@JsonKey(name: 'visa_type') String get visaType; String get reason;@JsonKey(name: 'next_steps') List<String>? get nextSteps;
+ String get visaType; String get reason; List<String>? get nextSteps;
 /// Create a copy of EligibleVisa
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -329,7 +329,7 @@ abstract mixin class $EligibleVisaCopyWith<$Res>  {
   factory $EligibleVisaCopyWith(EligibleVisa value, $Res Function(EligibleVisa) _then) = _$EligibleVisaCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(name: 'visa_type') String visaType, String reason,@JsonKey(name: 'next_steps') List<String>? nextSteps
+ String visaType, String reason, List<String>? nextSteps
 });
 
 
@@ -436,7 +436,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'visa_type')  String visaType,  String reason, @JsonKey(name: 'next_steps')  List<String>? nextSteps)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String visaType,  String reason,  List<String>? nextSteps)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _EligibleVisa() when $default != null:
 return $default(_that.visaType,_that.reason,_that.nextSteps);case _:
@@ -457,7 +457,7 @@ return $default(_that.visaType,_that.reason,_that.nextSteps);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'visa_type')  String visaType,  String reason, @JsonKey(name: 'next_steps')  List<String>? nextSteps)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String visaType,  String reason,  List<String>? nextSteps)  $default,) {final _that = this;
 switch (_that) {
 case _EligibleVisa():
 return $default(_that.visaType,_that.reason,_that.nextSteps);case _:
@@ -477,7 +477,7 @@ return $default(_that.visaType,_that.reason,_that.nextSteps);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'visa_type')  String visaType,  String reason, @JsonKey(name: 'next_steps')  List<String>? nextSteps)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String visaType,  String reason,  List<String>? nextSteps)?  $default,) {final _that = this;
 switch (_that) {
 case _EligibleVisa() when $default != null:
 return $default(_that.visaType,_that.reason,_that.nextSteps);case _:
@@ -492,13 +492,13 @@ return $default(_that.visaType,_that.reason,_that.nextSteps);case _:
 @JsonSerializable()
 
 class _EligibleVisa implements EligibleVisa {
-  const _EligibleVisa({@JsonKey(name: 'visa_type') required this.visaType, required this.reason, @JsonKey(name: 'next_steps') final  List<String>? nextSteps}): _nextSteps = nextSteps;
+  const _EligibleVisa({required this.visaType, required this.reason, final  List<String>? nextSteps}): _nextSteps = nextSteps;
   factory _EligibleVisa.fromJson(Map<String, dynamic> json) => _$EligibleVisaFromJson(json);
 
-@override@JsonKey(name: 'visa_type') final  String visaType;
+@override final  String visaType;
 @override final  String reason;
  final  List<String>? _nextSteps;
-@override@JsonKey(name: 'next_steps') List<String>? get nextSteps {
+@override List<String>? get nextSteps {
   final value = _nextSteps;
   if (value == null) return null;
   if (_nextSteps is EqualUnmodifiableListView) return _nextSteps;
@@ -540,7 +540,7 @@ abstract mixin class _$EligibleVisaCopyWith<$Res> implements $EligibleVisaCopyWi
   factory _$EligibleVisaCopyWith(_EligibleVisa value, $Res Function(_EligibleVisa) _then) = __$EligibleVisaCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(name: 'visa_type') String visaType, String reason,@JsonKey(name: 'next_steps') List<String>? nextSteps
+ String visaType, String reason, List<String>? nextSteps
 });
 
 

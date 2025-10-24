@@ -1,149 +1,149 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:meinvisa/data/models/visa_questionnaire_model/visa_questionnaire_model.dart';
-import 'package:meinvisa/data/providers/visa_recommendation_provider.dart';
+// import 'package:flutter/material.dart';
+// import 'package:flutter_riverpod/flutter_riverpod.dart';
+// import 'package:meinvisa/data/models/visa_questionnaire_model/visa_questionnaire_model.dart';
+// import 'package:meinvisa/data/providers/visa_recommendation_provider.dart';
 
-class OccupationPage extends ConsumerStatefulWidget {
-  final VoidCallback onNext;
-  const OccupationPage({super.key, required this.onNext});
+// class OccupationPage extends ConsumerStatefulWidget {
+//   final VoidCallback onNext;
+//   const OccupationPage({super.key, required this.onNext});
 
-  @override
-  ConsumerState<OccupationPage> createState() => _OccupationPageState();
-}
+//   @override
+//   ConsumerState<OccupationPage> createState() => _OccupationPageState();
+// }
 
-class _OccupationPageState extends ConsumerState<OccupationPage> {
-  String? _selectedOccupation;
-  String _searchQuery = '';
+// class _OccupationPageState extends ConsumerState<OccupationPage> {
+//   String? _selectedOccupation;
+//   String _searchQuery = '';
 
-  final Map<String, String> occupationMap = {
-    'Software Engineer': 'software_engineer',
-    'Nurse': 'nurse',
-    'Engineer': 'engineer',
-    'Teacher': 'teacher',
-    'Chef': 'chef',
-    'Doctor': 'doctor',
-    'Designer': 'designer',
-    'Scientist': 'scientist',
-    'Manager': 'manager',
-    'Artist': 'artist',
-    'Accountant': 'accountant',
-    'Lawyer': 'lawyer',
-    'Pharmacist': 'pharmacist',
-  };
+//   final Map<String, String> occupationMap = {
+//     'Software Engineer': 'software_engineer',
+//     'Nurse': 'nurse',
+//     'Engineer': 'engineer',
+//     'Teacher': 'teacher',
+//     'Chef': 'chef',
+//     'Doctor': 'doctor',
+//     'Designer': 'designer',
+//     'Scientist': 'scientist',
+//     'Manager': 'manager',
+//     'Artist': 'artist',
+//     'Accountant': 'accountant',
+//     'Lawyer': 'lawyer',
+//     'Pharmacist': 'pharmacist',
+//   };
 
-  void _showOccupationPicker() {
-    final filtered = occupationMap.keys
-        .where((occ) => occ.toLowerCase().contains(_searchQuery.toLowerCase()))
-        .toList();
+//   void _showOccupationPicker() {
+//     final filtered = occupationMap.keys
+//         .where((occ) => occ.toLowerCase().contains(_searchQuery.toLowerCase()))
+//         .toList();
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Padding(
-              padding: const EdgeInsets.fromLTRB(16, 32, 16, 16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    decoration: const InputDecoration(
-                      labelText: 'Search occupation',
-                      prefixIcon: Icon(Icons.search),
-                    ),
-                    onChanged: (val) => setModalState(() {
-                      _searchQuery = val;
-                    }),
-                  ),
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: filtered.length,
-                      itemBuilder: (context, index) {
-                        final occ = filtered[index];
-                        return ListTile(
-                          title: Text(occ),
-                          onTap: () {
-                            setState(() => _selectedOccupation = occ);
-                            Navigator.pop(context);
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
+//     showModalBottomSheet(
+//       context: context,
+//       isScrollControlled: true,
+//       builder: (context) {
+//         return StatefulBuilder(
+//           builder: (context, setModalState) {
+//             return Padding(
+//               padding: const EdgeInsets.fromLTRB(16, 32, 16, 16),
+//               child: Column(
+//                 mainAxisSize: MainAxisSize.min,
+//                 children: [
+//                   TextField(
+//                     decoration: const InputDecoration(
+//                       labelText: 'Search occupation',
+//                       prefixIcon: Icon(Icons.search),
+//                     ),
+//                     onChanged: (val) => setModalState(() {
+//                       _searchQuery = val;
+//                     }),
+//                   ),
+//                   Expanded(
+//                     child: ListView.builder(
+//                       itemCount: filtered.length,
+//                       itemBuilder: (context, index) {
+//                         final occ = filtered[index];
+//                         return ListTile(
+//                           title: Text(occ),
+//                           onTap: () {
+//                             setState(() => _selectedOccupation = occ);
+//                             Navigator.pop(context);
+//                           },
+//                         );
+//                       },
+//                     ),
+//                   ),
+//                 ],
+//               ),
+//             );
+//           },
+//         );
+//       },
+//     );
+//   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Text('Select your occupation', style: TextStyle(fontSize: 20)),
-          const SizedBox(height: 16),
-          GestureDetector(
-            onTap: _showOccupationPicker,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade400),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    _selectedOccupation ?? 'Select your occupation',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: _selectedOccupation == null
-                          ? Colors.grey.shade600
-                          : Colors.black,
-                    ),
-                  ),
-                  const Icon(Icons.arrow_drop_down),
-                ],
-              ),
-            ),
-          ),
-          SizedBox(height: 32),
-          ElevatedButton(
-            onPressed: _selectedOccupation == null
-                ? null
-                : () {
-                    final notifier = ref.read(
-                      visaRecommendationProvider.notifier,
-                    );
+//   @override
+//   Widget build(BuildContext context) {
+//     return Padding(
+//       padding: const EdgeInsets.all(16),
+//       child: Column(
+//         crossAxisAlignment: CrossAxisAlignment.center,
+//         mainAxisAlignment: MainAxisAlignment.center,
+//         children: [
+//           const Text('Select your occupation', style: TextStyle(fontSize: 20)),
+//           const SizedBox(height: 16),
+//           GestureDetector(
+//             onTap: _showOccupationPicker,
+//             child: Container(
+//               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+//               decoration: BoxDecoration(
+//                 border: Border.all(color: Colors.grey.shade400),
+//                 borderRadius: BorderRadius.circular(8),
+//               ),
+//               child: Row(
+//                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//                 children: [
+//                   Text(
+//                     _selectedOccupation ?? 'Select your occupation',
+//                     style: TextStyle(
+//                       fontSize: 16,
+//                       color: _selectedOccupation == null
+//                           ? Colors.grey.shade600
+//                           : Colors.black,
+//                     ),
+//                   ),
+//                   const Icon(Icons.arrow_drop_down),
+//                 ],
+//               ),
+//             ),
+//           ),
+//           SizedBox(height: 32),
+//           ElevatedButton(
+//             onPressed: _selectedOccupation == null
+//                 ? null
+//                 : () {
+//                     final notifier = ref.read(
+//                       visaRecommendationProvider.notifier,
+//                     );
 
-                    final draft =
-                        notifier.getDraft() ??
-                        const VisaQuestionnaire(
-                          occupationCode: '',
-                          nationality: '',
-                        );
+//                     final draft =
+//                         notifier.getDraft() ??
+//                         const VisaQuestionnaire(
+//                           occupationCode: '',
+//                           nationality: '',
+//                         );
 
-                    // convert display name to snake_case code
-                    final occupationCode = occupationMap[_selectedOccupation!]!;
+//                     // convert display name to snake_case code
+//                     final occupationCode = occupationMap[_selectedOccupation!]!;
 
-                    notifier.saveUserResponse(
-                      draft.copyWith(occupationCode: occupationCode),
-                    );
+//                     notifier.saveUserResponse(
+//                       draft.copyWith(occupationCode: occupationCode),
+//                     );
 
-                    widget.onNext();
-                  },
-            child: const Text('Next'),
-          ),
-        ],
-      ),
-    );
-  }
-}
+//                     widget.onNext();
+//                   },
+//             child: const Text('Next'),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+// }
