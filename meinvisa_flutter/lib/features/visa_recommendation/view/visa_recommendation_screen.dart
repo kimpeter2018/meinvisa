@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:meinvisa/data/models/visa_question_model/visa_question_model.dart';
+import 'package:meinvisa/data/providers/visa_question_provider.dart';
 import 'package:meinvisa/data/providers/visa_recommendation_provider.dart';
-import 'package:meinvisa/features/visa_recommendation/view/name_screen.dart';
-import 'package:meinvisa/features/visa_recommendation/view/nationality_screen.dart';
-import 'package:meinvisa/features/visa_recommendation/view/occupation_screen.dart';
 import 'package:meinvisa/features/visa_recommendation/view/result_screen.dart';
-import 'package:meinvisa/features/visa_recommendation/view/salary_recognition_page.dart';
+import 'package:meinvisa/features/visa_recommendation/widgets/dynamic_question_page.dart';
 
 class VisaRecommendationScreen extends ConsumerStatefulWidget {
   static const routeName = '/visa-recommendation';
@@ -20,14 +19,32 @@ class VisaRecommendationScreen extends ConsumerStatefulWidget {
 
 class _VisaRecommendationScreenState
     extends ConsumerState<VisaRecommendationScreen> {
-  final PageController _controller = PageController();
-  final ValueNotifier<int> _currentIndex = ValueNotifier<int>(0);
+  final PageController _pageController = PageController();
+  final ValueNotifier<int> _currentIndex = ValueNotifier(0);
 
-  final int _totalPages = 4;
+  late List<List<VisaQuestion>> _pages;
+
+  @override
+  void initState() {
+    super.initState();
+    final questions = ref
+        .read(visaRecommendationRepositoryProvider)
+        .getQuestions();
+
+    _pages = _groupQuestionsByCategory(questions);
+  }
+
+  List<List<VisaQuestion>> _groupQuestionsByCategory(List<VisaQuestion> all) {
+    final Map<String, List<VisaQuestion>> grouped = {};
+    for (final q in all) {
+      grouped.putIfAbsent(q.category, () => []).add(q);
+    }
+    return grouped.values.toList();
+  }
 
   Future<void> _nextPage() async {
-    if (_currentIndex.value < _totalPages - 1) {
-      _controller.nextPage(
+    if (_currentIndex.value < _pages.length - 1) {
+      _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
@@ -38,7 +55,7 @@ class _VisaRecommendationScreenState
 
   Future<void> _prevPage() async {
     if (_currentIndex.value > 0) {
-      _controller.previousPage(
+      _pageController.previousPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
@@ -49,6 +66,7 @@ class _VisaRecommendationScreenState
     final response = await ref
         .read(visaRecommendationProvider.notifier)
         .handleSubmit();
+
     if (mounted) {
       context.pushReplacement(VisaResultScreen.routeName, extra: response);
     }
@@ -56,7 +74,7 @@ class _VisaRecommendationScreenState
 
   @override
   void dispose() {
-    _controller.dispose();
+    _pageController.dispose();
     _currentIndex.dispose();
     super.dispose();
   }
@@ -64,18 +82,18 @@ class _VisaRecommendationScreenState
   Widget _buildPageIndicator() {
     return ValueListenableBuilder<int>(
       valueListenable: _currentIndex,
-      builder: (context, value, _) {
+      builder: (context, index, _) {
         return Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(
-            _totalPages,
-            (index) => AnimatedContainer(
+            _pages.length,
+            (i) => AnimatedContainer(
               duration: const Duration(milliseconds: 250),
-              margin: const EdgeInsets.symmetric(horizontal: 6),
-              width: value == index ? 16 : 8,
+              margin: const EdgeInsets.symmetric(horizontal: 5),
+              width: i == index ? 16 : 8,
               height: 8,
               decoration: BoxDecoration(
-                color: value == index ? Colors.black : Colors.grey.shade400,
+                color: i == index ? Colors.black : Colors.grey.shade400,
                 borderRadius: BorderRadius.circular(4),
               ),
             ),
@@ -93,33 +111,48 @@ class _VisaRecommendationScreenState
           icon: const Icon(Icons.arrow_back),
           onPressed: _prevPage,
         ),
+        title: const Text('Visa Recommendation'),
+        centerTitle: true,
       ),
       body: SafeArea(
         child: Column(
           children: [
             Expanded(
-              child: PageView(
-                controller: _controller,
+              child: PageView.builder(
+                controller: _pageController,
                 physics: const NeverScrollableScrollPhysics(),
-                onPageChanged: (index) => _currentIndex.value = index,
-                children: [
-                  PassportNamePage(
-                    onNext: () {
-                      _nextPage();
+                onPageChanged: (i) => _currentIndex.value = i,
+                itemCount: _pages.length,
+                itemBuilder: (context, i) {
+                  final questions = _pages[i];
+                  return DynamicQuestionPage(
+                    questions: questions,
+                    onAnswer: (id, value) {
+                      ref
+                          .read(visaRecommendationProvider.notifier)
+                          .updateAnswer(id, value);
                     },
-                  ),
-                  OccupationPage(onNext: _nextPage),
-                  NationalityPage(
-                    onNext: (String? countryCode) {
-                      _nextPage();
-                    },
-                  ),
-                  SalaryRecognitionPage(onNext: _nextPage),
-                ],
+                  );
+                },
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             _buildPageIndicator(),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _nextPage,
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 60,
+                  vertical: 16,
+                ),
+              ),
+              child: ValueListenableBuilder<int>(
+                valueListenable: _currentIndex,
+                builder: (context, i, _) =>
+                    Text(i == _pages.length - 1 ? 'Submit' : 'Next'),
+              ),
+            ),
             const SizedBox(height: 24),
           ],
         ),
