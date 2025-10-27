@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:meinvisa/data/models/user_model.dart';
+import 'package:meinvisa/data/models/user_model/user_model.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Provides a [UserRepository] instance with dependency injection via Riverpod.

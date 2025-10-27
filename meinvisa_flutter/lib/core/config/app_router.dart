@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:meinvisa/core/debug/debug_overlay.dart';
+import 'package:meinvisa/data/models/visa_eligibility_result_model/visa_eligibility_result_model.dart';
 import 'package:meinvisa/features/app/auth_gate.dart';
 import 'package:meinvisa/features/auth/view/email_confirmation_screen.dart';
 import 'package:meinvisa/features/auth/view/login_screen.dart';
@@ -8,6 +9,8 @@ import 'package:meinvisa/features/home/view/home_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:meinvisa/features/onboarding/view/onboarding_screen.dart';
+import 'package:meinvisa/features/visa_recommendation/view/result_screen.dart';
+import 'package:meinvisa/features/visa_recommendation/view/visa_recommendation_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -29,6 +32,7 @@ final router = GoRouter(
     ),
     GoRoute(
       path: HomeLayout.routeName,
+      name: 'home',
       builder: (context, state) => const HomeLayout(),
     ),
     GoRoute(
@@ -52,11 +56,23 @@ final router = GoRouter(
       path: OnboardingScreen.routeName,
       builder: (context, state) => OnboardingScreen(),
     ),
+    GoRoute(
+      path: VisaRecommendationScreen.routeName,
+      builder: (context, state) => VisaRecommendationScreen(),
+    ),
+    GoRoute(
+      path: VisaResultScreen.routeName,
+      builder: (context, state) {
+        final result = state.extra! as VisaEligibilityResult;
+        return VisaResultScreen(result: result);
+      },
+    ),
     if (kDebugMode)
       GoRoute(
         path: DebugOverlay.routeName,
         builder: (context, state) => const DebugOverlay(),
       ),
+
     GoRoute(
       path: '/auth-callback',
       builder: (context, state) {
