@@ -20,6 +20,7 @@ _VisaQuestion _$VisaQuestionFromJson(Map<String, dynamic> json) =>
               ?.map((e) => e as String)
               .toList() ??
           const [],
+      parentCondition: json['parent_condition'] as String?,
     );
 
 Map<String, dynamic> _$VisaQuestionToJson(
@@ -31,4 +32,5 @@ Map<String, dynamic> _$VisaQuestionToJson(
   'category': instance.category,
   'options_source': instance.optionsSource,
   'options': instance.options,
+  'parent_condition': instance.parentCondition,
 };

@@ -14,6 +14,7 @@ abstract class VisaQuestion with _$VisaQuestion {
     required String category,
     String? optionsSource,
     @Default([]) List<String> options,
+    String? parentCondition,
   }) = _VisaQuestion;
 
   factory VisaQuestion.fromJson(Map<String, dynamic> json) =>

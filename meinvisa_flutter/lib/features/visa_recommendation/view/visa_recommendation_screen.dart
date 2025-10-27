@@ -30,12 +30,38 @@ class _VisaRecommendationScreenState
     super.dispose();
   }
 
-  List<List<VisaQuestion>> _groupQuestionsByCategory(List<VisaQuestion> all) {
+  List<List<VisaQuestion>> _groupQuestionsByCategory(
+    List<VisaQuestion> all,
+    Map<String, dynamic> answers,
+  ) {
     final Map<String, List<VisaQuestion>> grouped = {};
-    for (final q in all) {
+
+    final filtered = _filterQuestions(all, answers);
+
+    for (final q in filtered) {
       grouped.putIfAbsent(q.category, () => []).add(q);
     }
     return grouped.values.toList();
+  }
+
+  List<VisaQuestion> _filterQuestions(
+    List<VisaQuestion> all,
+    Map<String, dynamic> answers,
+  ) {
+    return all.where((q) {
+      if (q.parentCondition == null || q.parentCondition!.isEmpty) {
+        return true; // always include top-level questions
+      }
+
+      // Example format: "purpose_of_stay=Work"
+      final parts = q.parentCondition!.split('=');
+      if (parts.length != 2) return true;
+
+      final field = parts[0];
+      final expected = parts[1];
+
+      return answers[field]?.toString() == expected;
+    }).toList();
   }
 
   Widget _buildPageIndicator() {
@@ -111,6 +137,13 @@ class _VisaRecommendationScreenState
                             );
                             await notifier.saveUserResponse(questionnaire);
 
+                            // recompute pages dynamically
+                            final draft = notifier.getDraft()?.toJson() ?? {};
+                            _pages = _groupQuestionsByCategory(
+                              questions,
+                              draft,
+                            );
+
                             if (_currentIndex.value < _pages.length - 1) {
                               _pageController.nextPage(
                                 duration: const Duration(milliseconds: 300),
@@ -118,7 +151,6 @@ class _VisaRecommendationScreenState
                               );
                             } else {
                               final result = await notifier.handleSubmit();
-
                               context.pushReplacement(
                                 VisaResultScreen.routeName,
                                 extra: result,
