@@ -1,3 +1,12 @@
 {
-  "imports": {}
+  "compilerOptions": {
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitAny": true
+  },
+  "imports": {
+    "@/": "./src/"
+  },
+  "lint": true,
+  "fmt": true
 }

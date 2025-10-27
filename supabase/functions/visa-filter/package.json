@@ -1,0 +1,9 @@
+{
+  "name": "visa-recommendation",
+  "version": "1.0.0",
+  "description": "Supabase Edge Function for visa recommendations",
+  "type": "module",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.43.0"
+  }
+}

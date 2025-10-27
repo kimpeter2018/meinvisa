@@ -20,5 +20,7 @@
     "fs",
     "http",
     "net"
-  ]
+  ],
+  "deno.enable": true,
+  "deno.suggest.imports.autoDiscover": true
 }
