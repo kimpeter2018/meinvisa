@@ -1,11 +1,30 @@
 {
+  // ------------------------------
+  // Dart & Flutter settings (meinvisa_flutter)
+  // ------------------------------
+  "[dart]": {
+    "editor.defaultFormatter": "Dart-Code.dart-code",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll": "explicit"
+    }
+  },
+  "dart.enableSdkFormatter": true,
+  "dart.lineLength": 100,
+  "dart.showTodos": true,
+  "dart.analysisExcludedFolders": [
+    "supabase"
+  ],
+  // ------------------------------
+  // Deno settings (supabase)
+  // ------------------------------
   "[typescript]": {
     "editor.defaultFormatter": "denoland.vscode-deno"
   },
+  "deno.enable": true,
   "deno.enablePaths": [
     "supabase/functions"
   ],
-  "deno.lint": true,
   "deno.unstable": [
     "bare-node-builtins",
     "byonm",
@@ -21,6 +40,5 @@
     "http",
     "net"
   ],
-  "deno.enable": true,
   "deno.suggest.imports.autoDiscover": true
 }

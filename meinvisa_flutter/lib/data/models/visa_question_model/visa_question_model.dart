@@ -14,6 +14,7 @@ abstract class VisaQuestion with _$VisaQuestion {
     required String category,
     String? optionsSource,
     @Default([]) List<String> options,
+    @Default(false) bool required,
     String? parentCondition,
   }) = _VisaQuestion;
 

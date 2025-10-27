@@ -22,7 +22,7 @@ class _HomeLayoutState extends ConsumerState<HomeLayout> {
     Center(
       child: ElevatedButton(
         onPressed: () {
-          context.go(VisaRecommendationScreen.routeName);
+          context.push(VisaRecommendationScreen.routeName);
         },
         child: const Text('Go to Visa Recommendation'),
       ),

@@ -1,11 +1,12 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:meinvisa/data/providers/auth_provider.dart';
 import 'package:meinvisa/features/auth/view/login_screen.dart';
 import 'package:meinvisa/features/home/view/home_layout.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:meinvisa/features/onboarding/view/onboarding_screen.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthGate extends ConsumerWidget {
   const AuthGate({super.key});
@@ -15,37 +16,43 @@ class AuthGate extends ConsumerWidget {
     return prefs.getBool('onboarding_completed_$userId') ?? false;
   }
 
-  Future<void> _recoverSession(BuildContext context) async {
-    try {
-      final session = await Supabase.instance.client.auth.recoverSession();
-      if (session == null) {
-        context.go(LoginScreen.routeName);
-        return;
-      }
-
-      final userId = session.user?.id ?? '';
-      final completed = await _checkOnboardingCompleted(userId);
-      if (context.mounted) {
-        if (completed) {
-          context.go(HomeLayout.routeName);
-        } else {
-          context.go(OnboardingScreen.routeName);
-        }
-      }
-    } catch (e) {
-      debugPrint('Auth session recovery failed: $e');
-      if (context.mounted) context.go(LoginScreen.routeName);
-    }
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return FutureBuilder(
-      future: _recoverSession(context),
-      builder: (context, snapshot) {
-        return const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        );
+    final authAsync = ref.watch(authStateProvider);
+
+    return authAsync.when(
+      data: (auth) {
+        if (auth == null) {
+          // Not logged in → go to login
+          Future.microtask(() => context.go(LoginScreen.routeName));
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        // Logged in → check onboarding before showing anything
+        final user = Supabase.instance.client.auth.currentUser;
+        final userId = user?.id ?? '';
+
+        Future.microtask(() async {
+          final completed = await _checkOnboardingCompleted(userId);
+          if (context.mounted) {
+            if (completed) {
+              context.go(HomeLayout.routeName);
+            } else {
+              context.go(OnboardingScreen.routeName);
+            }
+          }
+        });
+
+        // Show loading until navigation occurs
+        return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      },
+      loading: () {
+        return Scaffold(body: Center(child: CircularProgressIndicator()));
+      },
+      error: (_, __) {
+        return const LoginScreen();
       },
     );
   }

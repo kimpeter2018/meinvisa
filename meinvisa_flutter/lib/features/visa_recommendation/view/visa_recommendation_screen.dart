@@ -31,29 +31,26 @@ class _VisaRecommendationScreenState
   }
 
   List<List<VisaQuestion>> _groupQuestionsByCategory(
-    List<VisaQuestion> all,
-    Map<String, dynamic> answers,
-  ) {
+      List<VisaQuestion> all, Map<String, dynamic> answers) {
     final Map<String, List<VisaQuestion>> grouped = {};
-
     final filtered = _filterQuestions(all, answers);
 
     for (final q in filtered) {
       grouped.putIfAbsent(q.category, () => []).add(q);
     }
-    return grouped.values.toList();
+
+    // Remove empty pages
+    return grouped.values.where((page) => page.isNotEmpty).toList();
   }
 
   List<VisaQuestion> _filterQuestions(
-    List<VisaQuestion> all,
-    Map<String, dynamic> answers,
-  ) {
+      List<VisaQuestion> all, Map<String, dynamic> answers) {
     return all.where((q) {
       if (q.parentCondition == null || q.parentCondition!.isEmpty) {
-        return true; // always include top-level questions
+        return true; // top-level questions
       }
 
-      // Example format: "purpose_of_stay=Work"
+      // Format: "field=value"
       final parts = q.parentCondition!.split('=');
       if (parts.length != 2) return true;
 
@@ -110,11 +107,10 @@ class _VisaRecommendationScreenState
         title: const Text('Visa Recommendation'),
         centerTitle: true,
       ),
-      body: ref
-          .watch(visaQuestionsProvider)
-          .when(
+      body: ref.watch(visaQuestionsProvider).when(
             data: (questions) {
-              _pages = _groupQuestionsByCategory(questions);
+              final draft = notifier.getDraft()?.toJson() ?? {};
+              _pages = _groupQuestionsByCategory(questions, draft);
 
               return Column(
                 children: [
@@ -126,23 +122,24 @@ class _VisaRecommendationScreenState
                       onPageChanged: (i) => _currentIndex.value = i,
                       itemBuilder: (_, pageIndex) {
                         final pageQuestions = _pages[pageIndex];
-                        final draft = notifier.getDraft()?.toJson();
 
                         return DynamicQuestionPage(
                           questions: pageQuestions,
                           initialAnswers: draft,
                           onNext: (answers) async {
-                            final questionnaire = VisaQuestionnaire.fromJson(
-                              answers,
-                            );
+                            final questionnaire =
+                                VisaQuestionnaire.fromJson(answers);
                             await notifier.saveUserResponse(questionnaire);
 
-                            // recompute pages dynamically
-                            final draft = notifier.getDraft()?.toJson() ?? {};
+                            // recompute pages dynamically based on updated answers
+                            final updatedDraft =
+                                notifier.getDraft()?.toJson() ?? {};
                             _pages = _groupQuestionsByCategory(
-                              questions,
-                              draft,
-                            );
+                                questions, updatedDraft);
+
+                            // Ensure current index is valid
+                            _currentIndex.value =
+                                _currentIndex.value.clamp(0, _pages.length - 1);
 
                             if (_currentIndex.value < _pages.length - 1) {
                               _pageController.nextPage(
