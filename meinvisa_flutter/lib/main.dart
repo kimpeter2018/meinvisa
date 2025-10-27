@@ -11,10 +11,14 @@ void main() async {
   final flavor = const String.fromEnvironment('FLAVOR', defaultValue: 'local');
   await dotenv.load(fileName: flavor == 'prod' ? ".env.prod" : ".env.local");
 
-  await Supabase.initialize(
-    url: dotenv.env['SUPABASE_URL']!,
-    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
-  );
+  try {
+    await Supabase.initialize(
+      url: dotenv.env['SUPABASE_URL']!,
+      anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
+    );
+  } catch (e) {
+    debugPrint('Supabase init failed: $e');
+  }
 
   await GoogleSignIn.instance.initialize(
     clientId:
