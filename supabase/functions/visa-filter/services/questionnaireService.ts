@@ -1,4 +1,4 @@
-import { supabase } from "../lib/supabaseClient.ts";
+import { supabase } from "../_shared/supabaseClient.ts";
 
 export async function getQuestionnaireResponses(userId: string) {
   const { data, error } = await supabase

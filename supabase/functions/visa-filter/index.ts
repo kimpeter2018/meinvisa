@@ -1,7 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { recommendationHandler } from "./handlers/recommendationHandler.ts";
 import { handleError } from "./_shared/utils/errorHandler.ts";
-import { logInfo, logError } from "./lib/logger.ts";
 
 serve(async (req) => {
   try {
@@ -14,14 +13,16 @@ serve(async (req) => {
 
     return new Response(JSON.stringify(result), {
       status: 200,
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization":
+          "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0",
+      },
     });
   } catch (err) {
     return handleError(err);
   }
 });
-
-
 
 // // Follow this setup guide to integrate the Deno language server with your editor:
 // // https://deno.land/manual/getting_started/setup_your_environment
@@ -32,7 +33,6 @@ serve(async (req) => {
 // // Required environment variables:
 // // - SUPABASE_URL
 // // - SUPABASE_SERVICE_ROLE_KEY  (use service role for secure DB access)
-
 
 // // =============================================
 // // Supabase Edge Function: Visa Eligibility
@@ -107,7 +107,6 @@ serve(async (req) => {
 //   return data;
 // }
 
-
 // async function getVisaPaths(occupation_id: string) {
 //   const { data, error } = await supabase
 //     .from("visa_path")
@@ -126,7 +125,6 @@ serve(async (req) => {
 //   if (error) throw new Error(`Country lookup error: ${iso_code}`);
 //   return data ?? null;
 // }
-
 
 // // Core evaluation logic
 // function evaluateVisaPaths(
@@ -224,7 +222,6 @@ serve(async (req) => {
 //     });
 //   }
 // });
-
 
 // /* To invoke locally:
 
