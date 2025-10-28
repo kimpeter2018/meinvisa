@@ -3,12 +3,11 @@ import 'package:meinvisa/data/models/visa_question_model/visa_question_model.dar
 
 class VisaQuestionRepository {
   final SupabaseClient _supabase;
-
-  // In-memory cache
   final Map<String, List<String>> _optionsCache = {};
 
   VisaQuestionRepository(this._supabase);
 
+  /// Fetch all questions (with options) from Supabase
   Future<List<VisaQuestion>> getAllQuestions() async {
     final response = await _supabase
         .from('visa_question')
@@ -20,6 +19,7 @@ class VisaQuestionRepository {
         .map((json) => VisaQuestion.fromJson(json as Map<String, dynamic>))
         .toList();
 
+    // Fill options from optionsSource if needed
     final futures = questions.map((q) async {
       if (q.optionsSource != null && q.optionsSource!.isNotEmpty) {
         final opts = await getOptions(q.optionsSource!);
@@ -31,11 +31,9 @@ class VisaQuestionRepository {
     return Future.wait(futures);
   }
 
-  /// Fetch options from Supabase with caching
+  /// Option caching for Supabase lookup
   Future<List<String>> getOptions(String source) async {
-    if (_optionsCache.containsKey(source)) {
-      return _optionsCache[source]!;
-    }
+    if (_optionsCache.containsKey(source)) return _optionsCache[source]!;
 
     List<String> result;
     switch (source) {

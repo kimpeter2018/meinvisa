@@ -16,6 +16,8 @@ abstract class VisaQuestion with _$VisaQuestion {
     @Default([]) List<String> options,
     @Default(false) bool required,
     String? parentCondition,
+    @Default({})
+    Map<String, String> nextConditions, // answerValue -> nextQuestionId
   }) = _VisaQuestion;
 
   factory VisaQuestion.fromJson(Map<String, dynamic> json) =>

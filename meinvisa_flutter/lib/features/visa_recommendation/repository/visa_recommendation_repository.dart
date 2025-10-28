@@ -23,18 +23,17 @@ class VisaRecommendationRepository {
   }
 
   /// Calls the Supabase Edge Function to filter eligible visas
-  Future<VisaEligibilityResult> filterVisa() async {
-    if (_draft == null) {
-      throw Exception("No questionnaire data available.");
-    }
-    DebugLogger().log('Submitting Visa Questionnaire: ${_draft!.toJson()}');
+  Future<VisaEligibilityResult> filterVisa(VisaQuestionnaire data) async {
+    DebugLogger().log('Submitting Visa Questionnaire: ${data.toJson()}');
+
     final response = await _supabase.functions.invoke(
       'visa-filter',
-      body: _draft!.toJson(),
+      body: data.toJson(),
       headers: {
         'Authorization': 'Bearer ${dotenv.env['SUPABASE_FUNCTION_KEY']}',
       },
     );
+
     // Handle status-based errors
     if (response.status >= 400) {
       final details = response.data?.toString();

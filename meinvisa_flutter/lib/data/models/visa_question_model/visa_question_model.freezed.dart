@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$VisaQuestion {
 
- String get id; String get questionText;@QuestionTypeConverter() QuestionType get questionType; String get category; String? get optionsSource; List<String> get options; bool get required; String? get parentCondition;
+ String get id; String get questionText;@QuestionTypeConverter() QuestionType get questionType; String get category; String? get optionsSource; List<String> get options; bool get required; String? get parentCondition; Map<String, String> get nextConditions;
 /// Create a copy of VisaQuestion
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $VisaQuestionCopyWith<VisaQuestion> get copyWith => _$VisaQuestionCopyWithImpl<V
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is VisaQuestion&&(identical(other.id, id) || other.id == id)&&(identical(other.questionText, questionText) || other.questionText == questionText)&&(identical(other.questionType, questionType) || other.questionType == questionType)&&(identical(other.category, category) || other.category == category)&&(identical(other.optionsSource, optionsSource) || other.optionsSource == optionsSource)&&const DeepCollectionEquality().equals(other.options, options)&&(identical(other.required, required) || other.required == required)&&(identical(other.parentCondition, parentCondition) || other.parentCondition == parentCondition));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is VisaQuestion&&(identical(other.id, id) || other.id == id)&&(identical(other.questionText, questionText) || other.questionText == questionText)&&(identical(other.questionType, questionType) || other.questionType == questionType)&&(identical(other.category, category) || other.category == category)&&(identical(other.optionsSource, optionsSource) || other.optionsSource == optionsSource)&&const DeepCollectionEquality().equals(other.options, options)&&(identical(other.required, required) || other.required == required)&&(identical(other.parentCondition, parentCondition) || other.parentCondition == parentCondition)&&const DeepCollectionEquality().equals(other.nextConditions, nextConditions));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,questionText,questionType,category,optionsSource,const DeepCollectionEquality().hash(options),required,parentCondition);
+int get hashCode => Object.hash(runtimeType,id,questionText,questionType,category,optionsSource,const DeepCollectionEquality().hash(options),required,parentCondition,const DeepCollectionEquality().hash(nextConditions));
 
 @override
 String toString() {
-  return 'VisaQuestion(id: $id, questionText: $questionText, questionType: $questionType, category: $category, optionsSource: $optionsSource, options: $options, required: $required, parentCondition: $parentCondition)';
+  return 'VisaQuestion(id: $id, questionText: $questionText, questionType: $questionType, category: $category, optionsSource: $optionsSource, options: $options, required: $required, parentCondition: $parentCondition, nextConditions: $nextConditions)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $VisaQuestionCopyWith<$Res>  {
   factory $VisaQuestionCopyWith(VisaQuestion value, $Res Function(VisaQuestion) _then) = _$VisaQuestionCopyWithImpl;
 @useResult
 $Res call({
- String id, String questionText,@QuestionTypeConverter() QuestionType questionType, String category, String? optionsSource, List<String> options, bool required, String? parentCondition
+ String id, String questionText,@QuestionTypeConverter() QuestionType questionType, String category, String? optionsSource, List<String> options, bool required, String? parentCondition, Map<String, String> nextConditions
 });
 
 
@@ -65,7 +65,7 @@ class _$VisaQuestionCopyWithImpl<$Res>
 
 /// Create a copy of VisaQuestion
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? questionText = null,Object? questionType = null,Object? category = null,Object? optionsSource = freezed,Object? options = null,Object? required = null,Object? parentCondition = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? questionText = null,Object? questionType = null,Object? category = null,Object? optionsSource = freezed,Object? options = null,Object? required = null,Object? parentCondition = freezed,Object? nextConditions = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,questionText: null == questionText ? _self.questionText : questionText // ignore: cast_nullable_to_non_nullable
@@ -75,7 +75,8 @@ as String,optionsSource: freezed == optionsSource ? _self.optionsSource : option
 as String?,options: null == options ? _self.options : options // ignore: cast_nullable_to_non_nullable
 as List<String>,required: null == required ? _self.required : required // ignore: cast_nullable_to_non_nullable
 as bool,parentCondition: freezed == parentCondition ? _self.parentCondition : parentCondition // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,nextConditions: null == nextConditions ? _self.nextConditions : nextConditions // ignore: cast_nullable_to_non_nullable
+as Map<String, String>,
   ));
 }
 
@@ -160,10 +161,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String questionText, @QuestionTypeConverter()  QuestionType questionType,  String category,  String? optionsSource,  List<String> options,  bool required,  String? parentCondition)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String questionText, @QuestionTypeConverter()  QuestionType questionType,  String category,  String? optionsSource,  List<String> options,  bool required,  String? parentCondition,  Map<String, String> nextConditions)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _VisaQuestion() when $default != null:
-return $default(_that.id,_that.questionText,_that.questionType,_that.category,_that.optionsSource,_that.options,_that.required,_that.parentCondition);case _:
+return $default(_that.id,_that.questionText,_that.questionType,_that.category,_that.optionsSource,_that.options,_that.required,_that.parentCondition,_that.nextConditions);case _:
   return orElse();
 
 }
@@ -181,10 +182,10 @@ return $default(_that.id,_that.questionText,_that.questionType,_that.category,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String questionText, @QuestionTypeConverter()  QuestionType questionType,  String category,  String? optionsSource,  List<String> options,  bool required,  String? parentCondition)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String questionText, @QuestionTypeConverter()  QuestionType questionType,  String category,  String? optionsSource,  List<String> options,  bool required,  String? parentCondition,  Map<String, String> nextConditions)  $default,) {final _that = this;
 switch (_that) {
 case _VisaQuestion():
-return $default(_that.id,_that.questionText,_that.questionType,_that.category,_that.optionsSource,_that.options,_that.required,_that.parentCondition);case _:
+return $default(_that.id,_that.questionText,_that.questionType,_that.category,_that.optionsSource,_that.options,_that.required,_that.parentCondition,_that.nextConditions);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -201,10 +202,10 @@ return $default(_that.id,_that.questionText,_that.questionType,_that.category,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String questionText, @QuestionTypeConverter()  QuestionType questionType,  String category,  String? optionsSource,  List<String> options,  bool required,  String? parentCondition)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String questionText, @QuestionTypeConverter()  QuestionType questionType,  String category,  String? optionsSource,  List<String> options,  bool required,  String? parentCondition,  Map<String, String> nextConditions)?  $default,) {final _that = this;
 switch (_that) {
 case _VisaQuestion() when $default != null:
-return $default(_that.id,_that.questionText,_that.questionType,_that.category,_that.optionsSource,_that.options,_that.required,_that.parentCondition);case _:
+return $default(_that.id,_that.questionText,_that.questionType,_that.category,_that.optionsSource,_that.options,_that.required,_that.parentCondition,_that.nextConditions);case _:
   return null;
 
 }
@@ -216,7 +217,7 @@ return $default(_that.id,_that.questionText,_that.questionType,_that.category,_t
 @JsonSerializable()
 
 class _VisaQuestion implements VisaQuestion {
-  const _VisaQuestion({required this.id, required this.questionText, @QuestionTypeConverter() required this.questionType, required this.category, this.optionsSource, final  List<String> options = const [], this.required = false, this.parentCondition}): _options = options;
+  const _VisaQuestion({required this.id, required this.questionText, @QuestionTypeConverter() required this.questionType, required this.category, this.optionsSource, final  List<String> options = const [], this.required = false, this.parentCondition, final  Map<String, String> nextConditions = const {}}): _options = options,_nextConditions = nextConditions;
   factory _VisaQuestion.fromJson(Map<String, dynamic> json) => _$VisaQuestionFromJson(json);
 
 @override final  String id;
@@ -233,6 +234,13 @@ class _VisaQuestion implements VisaQuestion {
 
 @override@JsonKey() final  bool required;
 @override final  String? parentCondition;
+ final  Map<String, String> _nextConditions;
+@override@JsonKey() Map<String, String> get nextConditions {
+  if (_nextConditions is EqualUnmodifiableMapView) return _nextConditions;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableMapView(_nextConditions);
+}
+
 
 /// Create a copy of VisaQuestion
 /// with the given fields replaced by the non-null parameter values.
@@ -247,16 +255,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _VisaQuestion&&(identical(other.id, id) || other.id == id)&&(identical(other.questionText, questionText) || other.questionText == questionText)&&(identical(other.questionType, questionType) || other.questionType == questionType)&&(identical(other.category, category) || other.category == category)&&(identical(other.optionsSource, optionsSource) || other.optionsSource == optionsSource)&&const DeepCollectionEquality().equals(other._options, _options)&&(identical(other.required, required) || other.required == required)&&(identical(other.parentCondition, parentCondition) || other.parentCondition == parentCondition));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _VisaQuestion&&(identical(other.id, id) || other.id == id)&&(identical(other.questionText, questionText) || other.questionText == questionText)&&(identical(other.questionType, questionType) || other.questionType == questionType)&&(identical(other.category, category) || other.category == category)&&(identical(other.optionsSource, optionsSource) || other.optionsSource == optionsSource)&&const DeepCollectionEquality().equals(other._options, _options)&&(identical(other.required, required) || other.required == required)&&(identical(other.parentCondition, parentCondition) || other.parentCondition == parentCondition)&&const DeepCollectionEquality().equals(other._nextConditions, _nextConditions));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,questionText,questionType,category,optionsSource,const DeepCollectionEquality().hash(_options),required,parentCondition);
+int get hashCode => Object.hash(runtimeType,id,questionText,questionType,category,optionsSource,const DeepCollectionEquality().hash(_options),required,parentCondition,const DeepCollectionEquality().hash(_nextConditions));
 
 @override
 String toString() {
-  return 'VisaQuestion(id: $id, questionText: $questionText, questionType: $questionType, category: $category, optionsSource: $optionsSource, options: $options, required: $required, parentCondition: $parentCondition)';
+  return 'VisaQuestion(id: $id, questionText: $questionText, questionType: $questionType, category: $category, optionsSource: $optionsSource, options: $options, required: $required, parentCondition: $parentCondition, nextConditions: $nextConditions)';
 }
 
 
@@ -267,7 +275,7 @@ abstract mixin class _$VisaQuestionCopyWith<$Res> implements $VisaQuestionCopyWi
   factory _$VisaQuestionCopyWith(_VisaQuestion value, $Res Function(_VisaQuestion) _then) = __$VisaQuestionCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String questionText,@QuestionTypeConverter() QuestionType questionType, String category, String? optionsSource, List<String> options, bool required, String? parentCondition
+ String id, String questionText,@QuestionTypeConverter() QuestionType questionType, String category, String? optionsSource, List<String> options, bool required, String? parentCondition, Map<String, String> nextConditions
 });
 
 
@@ -284,7 +292,7 @@ class __$VisaQuestionCopyWithImpl<$Res>
 
 /// Create a copy of VisaQuestion
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? questionText = null,Object? questionType = null,Object? category = null,Object? optionsSource = freezed,Object? options = null,Object? required = null,Object? parentCondition = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? questionText = null,Object? questionType = null,Object? category = null,Object? optionsSource = freezed,Object? options = null,Object? required = null,Object? parentCondition = freezed,Object? nextConditions = null,}) {
   return _then(_VisaQuestion(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,questionText: null == questionText ? _self.questionText : questionText // ignore: cast_nullable_to_non_nullable
@@ -294,7 +302,8 @@ as String,optionsSource: freezed == optionsSource ? _self.optionsSource : option
 as String?,options: null == options ? _self._options : options // ignore: cast_nullable_to_non_nullable
 as List<String>,required: null == required ? _self.required : required // ignore: cast_nullable_to_non_nullable
 as bool,parentCondition: freezed == parentCondition ? _self.parentCondition : parentCondition // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,nextConditions: null == nextConditions ? _self._nextConditions : nextConditions // ignore: cast_nullable_to_non_nullable
+as Map<String, String>,
   ));
 }
 

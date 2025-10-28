@@ -5,8 +5,8 @@ import 'package:meinvisa/data/models/visa_question_model/visa_question_model.dar
 import 'package:meinvisa/data/models/visa_questionnaire_model/visa_questionnaire_model.dart';
 import 'package:meinvisa/data/providers/visa_question_provider.dart';
 import 'package:meinvisa/data/providers/visa_recommendation_provider.dart';
+import 'package:meinvisa/features/visa_recommendation/view/progressive_question_page.dart';
 import 'package:meinvisa/features/visa_recommendation/view/result_screen.dart';
-import 'package:meinvisa/features/visa_recommendation/view/dynamic_question_page.dart';
 
 class VisaRecommendationScreen extends ConsumerStatefulWidget {
   static const routeName = '/visa-recommendation';
@@ -19,70 +19,49 @@ class VisaRecommendationScreen extends ConsumerStatefulWidget {
 
 class _VisaRecommendationScreenState
     extends ConsumerState<VisaRecommendationScreen> {
-  final PageController _pageController = PageController();
-  final ValueNotifier<int> _currentIndex = ValueNotifier(0);
-  late List<List<VisaQuestion>> _pages;
+  late List<VisaQuestion> _questions;
+  late Map<String, dynamic> _draftAnswers;
 
   @override
-  void dispose() {
-    _pageController.dispose();
-    _currentIndex.dispose();
-    super.dispose();
-  }
-
-  List<List<VisaQuestion>> _groupQuestionsByCategory(
-      List<VisaQuestion> all, Map<String, dynamic> answers) {
-    final Map<String, List<VisaQuestion>> grouped = {};
-    final filtered = _filterQuestions(all, answers);
-
-    for (final q in filtered) {
-      grouped.putIfAbsent(q.category, () => []).add(q);
-    }
-
-    // Remove empty pages
-    return grouped.values.where((page) => page.isNotEmpty).toList();
+  void initState() {
+    super.initState();
+    _questions = [];
+    _draftAnswers = {};
   }
 
   List<VisaQuestion> _filterQuestions(
-      List<VisaQuestion> all, Map<String, dynamic> answers) {
+    List<VisaQuestion> all,
+    Map<String, dynamic> answers,
+  ) {
+    final purpose = answers['purpose_of_stay'];
+
     return all.where((q) {
-      if (q.parentCondition == null || q.parentCondition!.isEmpty) {
-        return true; // top-level questions
+      if (q.category == 'purpose') return true;
+      if (q.parentCondition == null || q.parentCondition!.isEmpty) return false;
+
+      // Handle IN condition
+      if (q.parentCondition!.contains('IN')) {
+        final match = RegExp(
+          r'purpose_of_stay IN \((.+)\)',
+        ).firstMatch(q.parentCondition!);
+        if (match != null) {
+          final list = match
+              .group(1)!
+              .replaceAll('"', '')
+              .split(',')
+              .map((e) => e.trim())
+              .toList();
+          return purpose != null && list.contains(purpose);
+        }
       }
 
-      // Format: "field=value"
+      // Handle exact match
       final parts = q.parentCondition!.split('=');
       if (parts.length != 2) return true;
-
-      final field = parts[0];
-      final expected = parts[1];
-
+      final field = parts[0].trim();
+      final expected = parts[1].trim();
       return answers[field]?.toString() == expected;
     }).toList();
-  }
-
-  Widget _buildPageIndicator() {
-    return ValueListenableBuilder<int>(
-      valueListenable: _currentIndex,
-      builder: (_, index, __) {
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(
-            _pages.length,
-            (i) => AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              margin: const EdgeInsets.symmetric(horizontal: 5),
-              width: i == index ? 16 : 8,
-              height: 8,
-              decoration: BoxDecoration(
-                color: i == index ? Colors.black : Colors.grey.shade400,
-                borderRadius: BorderRadius.circular(4),
-              ),
-            ),
-          ),
-        );
-      },
-    );
   }
 
   @override
@@ -93,75 +72,51 @@ class _VisaRecommendationScreenState
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            if (_currentIndex.value > 0) {
-              _pageController.previousPage(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-              );
-            } else {
-              Navigator.pop(context);
-            }
-          },
+          onPressed: () => Navigator.pop(context),
         ),
         title: const Text('Visa Recommendation'),
         centerTitle: true,
       ),
-      body: ref.watch(visaQuestionsProvider).when(
-            data: (questions) {
-              final draft = notifier.getDraft()?.toJson() ?? {};
-              _pages = _groupQuestionsByCategory(questions, draft);
+      body: ref
+          .watch(visaQuestionsProvider)
+          .when(
+            data: (allQuestions) {
+              // Load draft answers
+              _draftAnswers = notifier.getDraft()?.toJson() ?? {};
+              // Filter questions dynamically based on answers
+              _questions = _filterQuestions(allQuestions, _draftAnswers);
 
-              return Column(
-                children: [
-                  Expanded(
-                    child: PageView.builder(
-                      controller: _pageController,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _pages.length,
-                      onPageChanged: (i) => _currentIndex.value = i,
-                      itemBuilder: (_, pageIndex) {
-                        final pageQuestions = _pages[pageIndex];
+              return ProgressiveQuestionPage(
+                questions: _questions,
+                initialAnswers: _draftAnswers,
+                onNext: (answers) async {
+                  // Save user responses
+                  final questionnaire = VisaQuestionnaire.fromJson(answers);
+                  await notifier.saveUserResponse(questionnaire);
 
-                        return DynamicQuestionPage(
-                          questions: pageQuestions,
-                          initialAnswers: draft,
-                          onNext: (answers) async {
-                            final questionnaire =
-                                VisaQuestionnaire.fromJson(answers);
-                            await notifier.saveUserResponse(questionnaire);
+                  // Re-filter questions dynamically if any crucial answers changed
+                  _draftAnswers = notifier.getDraft()?.toJson() ?? {};
+                  _questions = _filterQuestions(allQuestions, _draftAnswers);
 
-                            // recompute pages dynamically based on updated answers
-                            final updatedDraft =
-                                notifier.getDraft()?.toJson() ?? {};
-                            _pages = _groupQuestionsByCategory(
-                                questions, updatedDraft);
+                  // Check if we should submit (all answered)
+                  final allAnswered = _questions.every(
+                    (q) =>
+                        !q.required ||
+                        (_draftAnswers[q.id] != null &&
+                            (_draftAnswers[q.id] is! String ||
+                                (_draftAnswers[q.id] as String).isNotEmpty) &&
+                            (_draftAnswers[q.id] is! List ||
+                                (_draftAnswers[q.id] as List).isNotEmpty)),
+                  );
 
-                            // Ensure current index is valid
-                            _currentIndex.value =
-                                _currentIndex.value.clamp(0, _pages.length - 1);
-
-                            if (_currentIndex.value < _pages.length - 1) {
-                              _pageController.nextPage(
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeInOut,
-                              );
-                            } else {
-                              final result = await notifier.handleSubmit();
-                              context.pushReplacement(
-                                VisaResultScreen.routeName,
-                                extra: result,
-                              );
-                            }
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildPageIndicator(),
-                  const SizedBox(height: 24),
-                ],
+                  if (allAnswered) {
+                    final result = await notifier.handleSubmit();
+                    context.pushReplacement(
+                      VisaResultScreen.routeName,
+                      extra: result,
+                    );
+                  }
+                },
               );
             },
             loading: () => const Center(child: CircularProgressIndicator()),

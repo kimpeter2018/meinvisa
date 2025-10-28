@@ -16,7 +16,11 @@ class VisaRecommendationNotifier
 
     // Load from cache if exists
     final cached = await _draftService.loadDraft();
-    if (cached != null) return VisaQuestionnaire.fromJson(cached);
+    if (cached != null) {
+      final questionnaire = VisaQuestionnaire.fromJson(cached);
+      await _visaRepository.saveDraft(questionnaire); // keep in sync
+      return questionnaire;
+    }
 
     // Otherwise, load from repo (if any)
     return _visaRepository.getDraft();
@@ -31,21 +35,29 @@ class VisaRecommendationNotifier
     await _draftService.saveDraft(questionnaire.toJson());
   }
 
-  /// Load locally cached draft
-  Future<void> loadDraft() async {
-    final draft = await _draftService.loadDraft();
-    if (draft != null) {
-      state = AsyncValue.data(VisaQuestionnaire.fromJson(draft));
-    }
-  }
+  // /// Load locally cached draft
+  // Future<void> loadDraft() async {
+  //   final draft = await _draftService.loadDraft();
+  //   if (draft != null) {
+  //     final questionnaire = VisaQuestionnaire.fromJson(draft);
+  //     state = AsyncValue.data(questionnaire);
+  //     await _visaRepository.saveDraft(questionnaire);
+  //   }
+  // }
 
   /// Submit questionnaire and get visa eligibility result
   Future<VisaEligibilityResult> handleSubmit() async {
     final questionnaire = state.value;
+
     if (questionnaire == null) {
       throw Exception('No questionnaire data to submit.');
     }
-    final result = await _visaRepository.filterVisa();
+
+    // ensure draft is synced
+    await _visaRepository.saveDraft(questionnaire);
+
+    // call Edge Function with the current data
+    final result = await _visaRepository.filterVisa(questionnaire);
     return result;
   }
 
