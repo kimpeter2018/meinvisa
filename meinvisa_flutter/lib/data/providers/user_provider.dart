@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:meinvisa/core/debug/debug_logger.dart';
 import 'package:meinvisa/data/models/user_model/user_model.dart';
 import 'package:meinvisa/data/providers/auth_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,7 +18,7 @@ final userProvider = StreamProvider<UserModel?>((ref) {
       controller.add(null);
       return;
     }
-    print("UserProvider: Current session user ID: ${session.user.id}");
+
     // fetch user data from your `users` table
     final response = await client
         .from('users')
@@ -26,18 +27,33 @@ final userProvider = StreamProvider<UserModel?>((ref) {
         .maybeSingle();
 
     if (response == null) {
-      print("UserProvider: No user data found in 'users' table.");
+      DebugLogger().log("UserProvider: No user data found in 'users' table.");
       controller.add(null); // not onboarded yet
     } else {
       controller.add(UserModel.fromJson(response));
     }
   }
 
-  emitCurrentUser();
+  /// Wait for Supabase session to initialize
+  Future<void> waitForSession() async {
+    int retries = 0;
+    while (client.auth.currentSession == null && retries < 5) {
+      await Future.delayed(const Duration(milliseconds: 300));
+      retries++;
+    }
+  }
 
-  // Listen to auth state changes
-  final authSub = client.auth.onAuthStateChange.listen((event) {
-    emitCurrentUser();
+  () async {
+    await waitForSession();
+    DebugLogger().log("UserProvider: Emitting initial user.");
+    await emitCurrentUser();
+    DebugLogger().log("UserProvider: Initial user emitted.");
+  }();
+
+  // React to auth state changes
+  final authSub = client.auth.onAuthStateChange.listen((event) async {
+    DebugLogger().log("UserProvider: Auth event = ${event.event.name}");
+    await emitCurrentUser();
   });
 
   ref.onDispose(() {
