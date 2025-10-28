@@ -139,7 +139,7 @@ class _DynamicQuestionPageState extends State<DynamicQuestionPage> {
 
   Widget _buildDropdown(VisaQuestion q) {
     return DropdownButtonFormField<String>(
-      value: _answers[q.id],
+      initialValue: _answers[q.id],
       decoration: InputDecoration(
         labelText: q.questionText,
         border: const OutlineInputBorder(),

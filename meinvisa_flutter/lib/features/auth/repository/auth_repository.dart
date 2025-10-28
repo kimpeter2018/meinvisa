@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:meinvisa/data/models/user_model/user_model.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 

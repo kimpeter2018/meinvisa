@@ -23,7 +23,6 @@ class AuthGate extends ConsumerWidget {
     return authAsync.when(
       data: (auth) {
         if (auth == null) {
-          // Not logged in → go to login
           Future.microtask(() => context.go(LoginScreen.routeName));
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
@@ -36,6 +35,7 @@ class AuthGate extends ConsumerWidget {
 
         Future.microtask(() async {
           final completed = await _checkOnboardingCompleted(userId);
+
           if (context.mounted) {
             if (completed) {
               context.go(HomeLayout.routeName);

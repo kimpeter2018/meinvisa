@@ -17,7 +17,6 @@ class HomeLayout extends ConsumerStatefulWidget {
 
 class _HomeLayoutState extends ConsumerState<HomeLayout> {
   int _selectedIndex = 0;
-
   static List<Widget> _pages(BuildContext context) => <Widget>[
     Center(
       child: ElevatedButton(
