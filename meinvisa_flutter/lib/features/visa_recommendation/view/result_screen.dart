@@ -20,7 +20,7 @@ class VisaResultScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16.0),
         child: bestVisa == null
             ? _buildNoVisaFound(context)
-            : _buildVisaResult(context, bestVisa),
+            : _buildVisaResult(context, bestVisa, result.eligibleVisas),
       ),
     );
   }
@@ -47,8 +47,12 @@ class VisaResultScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildVisaResult(BuildContext context, EligibleVisa bestVisa) {
-    final alternativeVisas = result.eligibleVisas.skip(1).toList();
+  Widget _buildVisaResult(
+    BuildContext context,
+    EligibleVisa bestVisa,
+    List<EligibleVisa> allVisas,
+  ) {
+    final alternativeVisas = allVisas.skip(1).toList();
 
     return SingleChildScrollView(
       child: Column(
@@ -89,14 +93,11 @@ class VisaResultScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    for (final step in bestVisa.nextSteps!)
-                      Text('• $step', style: const TextStyle(fontSize: 14)),
+                    for (final step in bestVisa.nextSteps!) Text('• $step'),
                     const SizedBox(height: 16),
                   ],
                   ElevatedButton(
-                    onPressed: () {
-                      context.go('/apply/${bestVisa.visaType}');
-                    },
+                    onPressed: () => context.go('/apply/${bestVisa.visaType}'),
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size.fromHeight(48),
                     ),
@@ -124,9 +125,7 @@ class VisaResultScreen extends StatelessWidget {
                   subtitle: Text(visa.reason),
                   trailing: IconButton(
                     icon: const Icon(Icons.arrow_forward),
-                    onPressed: () {
-                      context.go('/apply/${visa.visaType}');
-                    },
+                    onPressed: () => context.go('/apply/${visa.visaType}'),
                   ),
                 ),
               ),

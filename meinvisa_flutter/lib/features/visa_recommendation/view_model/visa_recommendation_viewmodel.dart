@@ -1,70 +1,124 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:meinvisa/core/services/draft_service.dart';
-import 'package:meinvisa/data/models/visa_eligibility_result_model/visa_eligibility_result_model.dart';
+import 'package:meinvisa/data/models/visa_question_model/visa_question_model.dart';
 import 'package:meinvisa/data/models/visa_questionnaire_model/visa_questionnaire_model.dart';
+import 'package:meinvisa/data/models/visa_eligibility_result_model/visa_eligibility_result_model.dart';
 import 'package:meinvisa/data/providers/visa_recommendation_provider.dart';
 import 'package:meinvisa/features/visa_recommendation/repository/visa_recommendation_repository.dart';
 
 class VisaRecommendationNotifier
     extends AutoDisposeAsyncNotifier<VisaQuestionnaire?> {
-  late final VisaRecommendationRepository _visaRepository;
-  final DraftService _draftService = DraftService();
+  late final VisaRecommendationRepository _repo;
+
+  /// Internal state
+  List<VisaQuestion> _allQuestions = [];
+  List<VisaQuestion> _queue = [];
+  Map<String, dynamic> _answers = {};
 
   @override
   Future<VisaQuestionnaire?> build() async {
-    _visaRepository = ref.read(visaRecommendationRepositoryProvider);
+    _repo = ref.read(visaRecommendationRepositoryProvider);
 
-    // Load from cache if exists
-    final cached = await _draftService.loadDraft();
-    if (cached != null) {
-      final questionnaire = VisaQuestionnaire.fromJson(cached);
-      await _visaRepository.saveDraft(questionnaire); // keep in sync
-      return questionnaire;
+    // Load draft if any
+    final draft = _repo.getDraft();
+
+    // Fetch all questions
+    _allQuestions = await _repo.getAllQuestions();
+
+    // Initialize queue
+    _queue = _initializeQueue(draft);
+
+    _answers = draft?.toJson() ?? {};
+    return draft;
+  }
+
+  /// Initialize the question queue (start from "universal" or "purpose")
+  List<VisaQuestion> _initializeQueue(VisaQuestionnaire? draft) {
+    final initial = _allQuestions
+        .where((q) => q.category == 'universal')
+        .toList();
+
+    // If user already answered purpose, load related ones
+    final purpose = draft?.purposeOfStay;
+    if (purpose != null) {
+      final related = _filterQuestionsByPurpose(purpose);
+      return [...initial, ...related];
     }
 
-    // Otherwise, load from repo (if any)
-    return _visaRepository.getDraft();
+    return initial;
   }
 
-  VisaQuestionnaire? getDraft() => _visaRepository.getDraft();
-
-  /// Save questionnaire response as a draft
-  Future<void> saveUserResponse(VisaQuestionnaire questionnaire) async {
-    state = AsyncValue.data(questionnaire);
-    await _visaRepository.saveDraft(questionnaire);
-    await _draftService.saveDraft(questionnaire.toJson());
+  /// Filter questions dynamically based on user's chosen purpose
+  List<VisaQuestion> _filterQuestionsByPurpose(String purpose) {
+    return _allQuestions.where((q) {
+      final cond = q.optionsSource ?? '';
+      if (cond.contains('IN')) {
+        final match = RegExp(r'purpose_of_stay IN \((.+)\)').firstMatch(cond);
+        if (match != null) {
+          final list = match
+              .group(1)!
+              .replaceAll('"', '')
+              .split(',')
+              .map((e) => e.trim())
+              .toList();
+          return list.contains(purpose);
+        }
+      }
+      return true;
+    }).toList();
   }
 
-  // /// Load locally cached draft
-  // Future<void> loadDraft() async {
-  //   final draft = await _draftService.loadDraft();
-  //   if (draft != null) {
-  //     final questionnaire = VisaQuestionnaire.fromJson(draft);
-  //     state = AsyncValue.data(questionnaire);
-  //     await _visaRepository.saveDraft(questionnaire);
-  //   }
-  // }
+  /// Public getter for UI
+  List<VisaQuestion> get queue => _queue;
 
-  /// Submit questionnaire and get visa eligibility result
+  /// Get current answers
+  Map<String, dynamic> get answers => _answers;
+
+  /// Handle answering a question
+  Future<void> answerQuestion(VisaQuestion q, dynamic answer) async {
+    _answers[q.fieldKey] = answer;
+
+    // Handle dynamic branching
+    if (q.fieldKey == 'purpose_of_stay') {
+      final related = _filterQuestionsByPurpose(answer.toString());
+      _queue.addAll(related);
+    }
+
+    // Save to draft
+    await _repo.saveDraft(VisaQuestionnaire.fromJson(_answers));
+
+    // Notify UI
+    state = AsyncData(VisaQuestionnaire.fromJson(_answers));
+  }
+
+  /// Pop the next question (Progressive flow)
+  VisaQuestion? nextQuestion() {
+    if (_queue.isEmpty) return null;
+    return _queue.removeAt(0);
+  }
+
+  /// Submit and fetch result
   Future<VisaEligibilityResult> handleSubmit() async {
-    final questionnaire = state.value;
-
-    if (questionnaire == null) {
+    final data = _repo.getDraft();
+    if (data == null) {
       throw Exception('No questionnaire data to submit.');
     }
 
-    // ensure draft is synced
-    await _visaRepository.saveDraft(questionnaire);
+    state = const AsyncLoading();
 
-    // call Edge Function with the current data
-    final result = await _visaRepository.filterVisa(questionnaire);
-    return result;
+    try {
+      final result = await _repo.filterVisa(data);
+      state = AsyncData(data);
+      return result;
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      rethrow;
+    }
   }
 
-  /// Clears all saved responses
-  Future<void> clearResponses() async {
-    state = const AsyncValue.data(null);
-    _visaRepository.clearDraft();
-    await _draftService.clearDraft();
+  void clearDraft() {
+    _repo.clearDraft();
+    _answers.clear();
+    _queue.clear();
+    state = const AsyncData(null);
   }
 }

@@ -8,16 +8,17 @@ part 'visa_question_model.g.dart';
 @freezed
 abstract class VisaQuestion with _$VisaQuestion {
   const factory VisaQuestion({
-    required String id,
-    required String questionText,
+    required String uid, // Supabase-generated UUID
+    required int id, // Optional sequential ID
+    required String category, // e.g. 'universal', 'work:general'
+    required String question,
+    required String fieldKey,
     @QuestionTypeConverter() required QuestionType questionType,
-    required String category,
+    String? purpose,
     String? optionsSource,
     @Default([]) List<String> options,
     @Default(false) bool required,
-    String? parentCondition,
-    @Default({})
-    Map<String, String> nextConditions, // answerValue -> nextQuestionId
+    int? orderIndex,
   }) = _VisaQuestion;
 
   factory VisaQuestion.fromJson(Map<String, dynamic> json) =>
