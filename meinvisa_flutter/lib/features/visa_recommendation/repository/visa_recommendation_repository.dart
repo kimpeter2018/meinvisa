@@ -61,6 +61,7 @@ class VisaRecommendationRepository {
     if (_optionsCache.containsKey(source)) return _optionsCache[source]!;
 
     List<String> result;
+
     switch (source) {
       case 'countries':
         final data = await _supabase.from('countries').select('name');

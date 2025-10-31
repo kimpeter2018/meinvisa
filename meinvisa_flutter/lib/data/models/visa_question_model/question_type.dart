@@ -4,11 +4,11 @@ enum QuestionType {
   @JsonValue('select')
   select,
 
-  @JsonValue('dropdown')
-  dropdown,
-
   @JsonValue('number')
   number,
+
+  @JsonValue('boolean')
+  boolean,
 
   @JsonValue('checkbox')
   checkbox,

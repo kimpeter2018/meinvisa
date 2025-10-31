@@ -11,6 +11,7 @@ analyzer:
     invalid_annotation_target: ignore
 
 dependencies:
+  collection: ^1.19.1
   country_picker: ^2.0.27
   flutter:
     sdk: flutter
@@ -20,6 +21,7 @@ dependencies:
   go_router: ^16.2.1
   google_fonts: ^6.3.1
   google_sign_in: ^7.1.1
+  intl: ^0.20.2
   json_annotation: ^4.9.0
   riverpod: ^2.6.1
   shared_preferences: ^2.5.3

@@ -19,17 +19,7 @@ final router = GoRouter(
   initialLocation: '/',
   navigatorKey: rootNavigatorKey,
   routes: [
-    GoRoute(
-      path: '/',
-      builder: (context, state) {
-        final session = Supabase.instance.client.auth.currentSession;
-        if (session != null) {
-          // Session exists, now delegate to AuthGate
-          return const AuthGate();
-        }
-        return const LoginScreen();
-      },
-    ),
+    GoRoute(path: '/', builder: (context, state) => const AuthGate()),
     GoRoute(
       path: HomeLayout.routeName,
       name: 'home',

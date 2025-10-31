@@ -38,14 +38,8 @@ class VisaRecommendationScreen extends ConsumerWidget {
           return ProgressiveQuestionPage(
             questions: queue,
             initialAnswers: answers,
-            onNext: (answers) async {
-              // Save current question answers progressively
-              final q = queue.isNotEmpty ? queue.first : null;
-              if (q != null && answers.containsKey(q.fieldKey)) {
-                await notifier.answerQuestion(q, answers[q.fieldKey]);
-              }
-
-              // If queue is empty after this answer → submit
+            onNext: (question, answer) async {
+              await notifier.answerQuestion(question, answer);
               if (notifier.queue.isEmpty) {
                 final result = await notifier.handleSubmit();
                 if (context.mounted) {
