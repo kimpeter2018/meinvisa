@@ -45,6 +45,10 @@ abstract class VisaQuestionnaire with _$VisaQuestionnaire {
     String? employmentStatus,
     bool? isSelfEmployed,
     bool? hasAnerkennung,
+    bool? isDegreeRecognized,
+    bool? workedInGermany,
+    bool? contractOverOneYear,
+    bool? hasAccompanyingFamily,
 
     // Work: IT
     bool? isItField,
@@ -73,6 +77,9 @@ abstract class VisaQuestionnaire with _$VisaQuestionnaire {
     bool? admitted,
     @DateTimeConverter() DateTime? programStart,
     bool? proofFunds,
+    bool? completedStudienkolleg,
+    bool? intendParttimeWork,
+    bool? hasBlockedAccount,
 
     // Education: Language Course
     bool? isLanguageCourse,
@@ -91,11 +98,17 @@ abstract class VisaQuestionnaire with _$VisaQuestionnaire {
     // Research: General
     bool? hasHostAgreement,
     bool? researchFunded,
+    String? institutionType,
+    bool? receivesStipend,
+    int? researchDurationMonths,
 
     // Personal: General
     bool? hasFamilyInGermany,
     String? personalRoute,
     bool? hasHostContract,
+    bool? hasChildcareExperience,
+    bool? livesWithHost,
+    bool? hasRecognizedSponsor,
 
     // Startup: General
     bool? isStartup,
@@ -107,6 +120,9 @@ abstract class VisaQuestionnaire with _$VisaQuestionnaire {
     String? currentResidence,
     bool? hasInsurance,
     bool? hasAccommodation,
+    bool? hasGermanInsurance,
+    bool? stayOver90Days,
+    bool? isEuMobilityProgram,
   }) = _VisaQuestionnaire;
 
   factory VisaQuestionnaire.fromJson(Map<String, dynamic> json) =>

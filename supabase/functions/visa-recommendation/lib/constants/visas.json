@@ -1,0 +1,206 @@
+{
+  "work": {
+    "blue_card": {
+      "name": "EU Blue Card",
+      "category": "work",
+      "basePriority": 90,
+      "criteria": {
+        "!has_job_offer": 30,
+        "has_degree": 25,
+        "degree_recognized": 20,
+        "salary_above_threshold": 25,
+        "experience_years_2+": 10,
+        "german_level_B1+": 10
+      },
+      "thresholds": {
+        "min_salary_general": 58400,
+        "min_salary_shortage": 45600
+      },
+      "explanationTemplate": "With your {{degreeField}} degree and €{{salary}} offer from {{nationality}}, you may qualify for the EU Blue Card.",
+      "canApplyInCountry": ["United States", "Canada", "Australia", "Japan", "Korea", "United Kingdom"],
+      "allowConditional": false
+    },
+
+    "skilled_worker": {
+      "name": "Skilled Worker Visa",
+      "category": "work",
+      "basePriority": 75,
+      "criteria": {
+        "!has_job_offer": 30,
+        "has_degree": 20,
+        "degree_recognized": 25,
+        "experience_years_2+": 15,
+        "german_level_B1+": 15,
+        "has_anerkennung": 20
+      },
+      "explanationTemplate": "With your {{degreeField}} qualification and work experience, you're eligible for the Skilled Worker Visa.",
+      "canApplyInCountry": ["United States", "Canada", "Australia", "Japan", "Korea", "United Kingdom"],
+      "allowConditional": true
+    },
+
+    "it_specialist": {
+      "name": "IT Specialist Visa (Without Degree)",
+      "category": "work",
+      "basePriority": 70,
+      "criteria": {
+        "!has_job_offer": 30,
+        "!is_it_field": 30,
+        "!it_experience": 25,
+        "experience_years_3+": 20,
+        "salary_above_50260": 25,
+        "english_level_B2+": 10,
+        "german_level_A2+": 5
+      },
+      "thresholds": {
+        "min_salary": 50260
+      },
+      "explanationTemplate": "Based on your {{experienceYears}} years of IT experience, you qualify for the IT Specialist Visa even without a formal degree.",
+      "canApplyInCountry": ["United States", "Canada", "Australia", "Japan", "Korea", "United Kingdom"],
+      "allowConditional": false
+    },
+
+    "job_seeker": {
+      "name": "Job Seeker Visa",
+      "category": "work",
+      "basePriority": 60,
+      "criteria": {
+        "has_degree": 30,
+        "degree_recognized": 25,
+        "experience_years_2+": 20,
+        "proof_funds": 25,
+        "german_level_A2+": 15
+      },
+      "explanationTemplate": "You may qualify for a Job Seeker Visa to search for employment in Germany for up to 6 months.",
+      "canApplyInCountry": false,
+      "allowConditional": true
+    }
+  },
+
+  "education": {
+    "student": {
+      "name": "Student Visa",
+      "category": "education",
+      "basePriority": 85,
+      "criteria": {
+        "!admitted": 40,
+        "proof_funds": 25,
+        "german_level_B1+": 15,
+        "has_insurance": 15,
+        "has_accommodation": 10
+      },
+      "explanationTemplate": "Since you have an admission letter from a German university, you qualify for a Student Visa.",
+      "canApplyInCountry": ["United States", "Canada", "Australia", "Japan", "Korea", "United Kingdom"],
+      "allowConditional": false
+    },
+
+    "language_course": {
+      "name": "Language Course Visa",
+      "category": "education",
+      "basePriority": 50,
+      "criteria": {
+        "is_language_course": 40,
+        "fulltime_german": 30,
+        "proof_funds": 25,
+        "has_insurance": 10
+      },
+      "explanationTemplate": "Because you plan to attend a full-time German course, you may qualify for a Language Course Visa.",
+      "canApplyInCountry": false,
+      "allowConditional": true
+    },
+
+    "ausbildung": {
+      "name": "Ausbildung (Vocational Training) Visa",
+      "category": "education",
+      "basePriority": 75,
+      "criteria": {
+        "!is_ausbildung": 40,
+        "has_vocational": 25,
+        "german_level_B1+": 25,
+        "proof_funds": 15,
+        "has_insurance": 10
+      },
+      "explanationTemplate": "With a training contract, you may qualify for an Ausbildung visa.",
+      "canApplyInCountry": false,
+      "allowConditional": false
+    }
+  },
+
+  "research": {
+    "researcher": {
+      "name": "Researcher Visa",
+      "category": "research",
+      "basePriority": 80,
+      "criteria": {
+        "!has_host_agreement": 45,
+        "research_funded": 30,
+        "has_insurance": 15,
+        "has_accommodation": 10
+      },
+      "explanationTemplate": "You're eligible for a Researcher Visa based on your host agreement with a German institution.",
+      "canApplyInCountry": ["United States", "Canada", "Australia", "Japan", "Korea", "United Kingdom"],
+      "allowConditional": false
+    },
+
+    "artist": {
+      "name": "Artist/Performer Visa",
+      "category": "research",
+      "basePriority": 70,
+      "criteria": {
+        "!has_performance": 40,
+        "has_host_contract": 30,
+        "proof_funds": 20,
+        "has_insurance": 10
+      },
+      "explanationTemplate": "As an artist or performer, you may qualify for a cultural visa.",
+      "canApplyInCountry": false,
+      "allowConditional": true
+    }
+  },
+
+  "personal": {
+    "family_reunion": {
+      "name": "Family Reunion Visa",
+      "category": "personal",
+      "basePriority": 85,
+      "criteria": {
+        "!has_family_in_germany": 50,
+        "proof_funds": 25,
+        "german_level_A1+": 15,
+        "has_insurance": 10
+      },
+      "explanationTemplate": "Since you have family in Germany, you may qualify for Family Reunion.",
+      "canApplyInCountry": false,
+      "allowConditional": false
+    },
+
+    "au_pair": {
+      "name": "Au Pair Visa",
+      "category": "personal",
+      "basePriority": 65,
+      "criteria": {
+        "!personal_route_au_pair": 35,
+        "!has_host_contract": 35,
+        "age_between_18_26": 20,
+        "german_level_A1+": 15
+      },
+      "explanationTemplate": "You may qualify for an Au Pair Visa to live with a host family.",
+      "canApplyInCountry": false,
+      "allowConditional": false
+    },
+
+    "volunteer_service": {
+      "name": "Volunteer / FSJ Visa",
+      "category": "personal",
+      "basePriority": 60,
+      "criteria": {
+        "!personal_route_volunteer": 40,
+        "!has_host_contract": 35,
+        "proof_funds": 15,
+        "german_level_A2+": 10
+      },
+      "explanationTemplate": "You're eligible for a Volunteer (FSJ/BFD) visa based on your host program contract.",
+      "canApplyInCountry": false,
+      "allowConditional": true
+    }
+  }
+}
