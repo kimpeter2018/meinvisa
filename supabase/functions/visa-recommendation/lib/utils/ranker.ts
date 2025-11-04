@@ -1,7 +1,6 @@
 // lib/utils/ranker.ts
 import type { VisaCandidate, VisaQuestionnaireInput } from "../types.ts";
 import { isVisaFreeNationality, isWorkingHolidayEligible } from "./nationality.ts";
-import { compareLanguageLevel } from "./matchHelpers.ts";
 import visasJson from "../constants/visas.json" with { type: "json" };
 
 /**
