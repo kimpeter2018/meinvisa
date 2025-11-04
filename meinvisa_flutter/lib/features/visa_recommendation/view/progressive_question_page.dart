@@ -1,19 +1,35 @@
+// lib/features/visa_recommendation/view/progressive_question_page.dart
 import 'package:flutter/material.dart';
 import 'package:meinvisa/core/debug/debug_logger.dart';
 import 'package:meinvisa/data/models/visa_question_model/visa_question_model.dart';
 import 'package:meinvisa/data/models/visa_question_model/question_type.dart';
 import 'package:meinvisa/features/visa_recommendation/widgets/date_picker.dart';
 
+/// ============================================
+/// OPTIMIZED PROGRESSIVE QUESTION UI
+/// ============================================
+///
+/// Features:
+/// 1. Shows one question at a time
+/// 2. Collapses answered questions with edit capability
+/// 3. Dynamic question loading (no pre-fetching)
+/// 4. Progress indicator
+/// 5. Smooth animations
+///
 class ProgressiveQuestionPage extends StatefulWidget {
-  final List<VisaQuestion> questions;
-  final Map<String, dynamic> initialAnswers;
+  final VisaQuestion? currentQuestion;
+  final Map<String, dynamic> answers;
+  final int totalAnswered;
   final Future<void> Function(VisaQuestion question, dynamic answer) onNext;
+  final VoidCallback? onComplete;
 
   const ProgressiveQuestionPage({
     super.key,
-    required this.questions,
-    required this.initialAnswers,
+    required this.currentQuestion,
+    required this.answers,
+    required this.totalAnswered,
     required this.onNext,
+    this.onComplete,
   });
 
   @override
@@ -22,64 +38,61 @@ class ProgressiveQuestionPage extends StatefulWidget {
 }
 
 class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage> {
-  late Map<String, dynamic> _answers;
-  final List<VisaQuestion> _answered = [];
-  VisaQuestion? _current;
+  bool _isSubmitting = false;
+  dynamic _currentAnswer;
 
   @override
   void initState() {
     super.initState();
-    _answers = Map<String, dynamic>.from(widget.initialAnswers);
-    _current = widget.questions.isNotEmpty ? widget.questions.first : null;
+    // Pre-fill answer if question was previously answered
+    if (widget.currentQuestion != null) {
+      _currentAnswer = widget.answers[widget.currentQuestion!.fieldKey];
+    }
   }
 
-  void _goToQuestion(VisaQuestion q) {
-    setState(() {
-      _current = q;
-      _answered.removeWhere((x) => x.fieldKey == q.fieldKey);
-    });
+  @override
+  void didUpdateWidget(ProgressiveQuestionPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Update answer when question changes
+    if (widget.currentQuestion != null &&
+        widget.currentQuestion != oldWidget.currentQuestion) {
+      _currentAnswer = widget.answers[widget.currentQuestion!.fieldKey];
+    }
   }
 
-  Future<void> _handleNext(dynamic value) async {
-    if (_current == null) return;
+  Future<void> _handleNext() async {
+    if (widget.currentQuestion == null) return;
+    if (_currentAnswer == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please answer the question')),
+      );
+      return;
+    }
 
-    final q = _current!;
-    _answers[q.fieldKey] = value;
+    setState(() => _isSubmitting = true);
 
-    await widget.onNext(q, value);
+    try {
+      await widget.onNext(widget.currentQuestion!, _currentAnswer);
 
-    setState(() {
-      _answered.add(q);
-      widget.questions.remove(q);
-      _current = widget.questions.isNotEmpty ? widget.questions.first : null;
-    });
+      // Clear answer for next question
+      setState(() {
+        _currentAnswer = null;
+        _isSubmitting = false;
+      });
+    } catch (e) {
+      setState(() => _isSubmitting = false);
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
   }
 
-  Widget _buildCollapsed(VisaQuestion q) {
-    final answer = _answers[q.fieldKey]?.toString() ?? 'Not answered';
-    return GestureDetector(
-      onTap: () => _goToQuestion(q),
-      child: Card(
-        elevation: 3,
-        margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
-        child: ListTile(
-          title: Text(
-            q.question,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-          subtitle: Text(answer),
-          trailing: const Icon(Icons.edit, color: Colors.blue),
-        ),
-      ),
-    );
-  }
-
-  // Add this helper function in your state class
   int? _calculateAge(DateTime birthDate) {
     final today = DateTime.now();
     int age = today.year - birthDate.year;
 
-    // Adjust if birthday hasn't occurred yet this year
     if (today.month < birthDate.month ||
         (today.month == birthDate.month && today.day < birthDate.day)) {
       age--;
@@ -88,58 +101,66 @@ class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage> {
     return age;
   }
 
-  //TODO: Refactor input widgets into separate classes/files if they grow more complex
-  Widget _buildInput(VisaQuestion q, dynamic currentValue) {
+  Widget _buildInput(VisaQuestion q) {
     DebugLogger().log(
-      'Building input for ${q.fieldKey} of type ${q.questionType} with current value: $currentValue',
+      'Building input for ${q.fieldKey} of type ${q.questionType}',
     );
+
     switch (q.questionType) {
       case QuestionType.select:
         return DropdownButtonFormField<String>(
-          initialValue: currentValue,
-          decoration: const InputDecoration(
-            border: OutlineInputBorder(),
+          initialValue: _currentAnswer as String?,
+          decoration: InputDecoration(
+            border: const OutlineInputBorder(),
             labelText: 'Select an option',
+            helperText: q.purpose,
+            helperMaxLines: 2,
           ),
           items: q.options
               .map((e) => DropdownMenuItem(value: e, child: Text(e)))
               .toList(),
-          onChanged: (val) => setState(() => _answers[q.fieldKey] = val),
+          onChanged: (val) => setState(() => _currentAnswer = val),
         );
+
       case QuestionType.boolean:
-        // Convert current boolean to string for dropdown
-        String? initialValue = currentValue == null
+        String? initialValue = _currentAnswer == null
             ? null
-            : (currentValue == true ? 'yes' : 'no');
+            : (_currentAnswer == true ? 'yes' : 'no');
 
         return DropdownButtonFormField<String>(
           initialValue: initialValue,
-          decoration: const InputDecoration(
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            border: const OutlineInputBorder(),
             labelText: 'Select an option',
+            helperText: q.purpose,
+            helperMaxLines: 2,
           ),
-          items: q.options
-              .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-              .toList(),
+          items: const [
+            DropdownMenuItem(value: 'yes', child: Text('Yes')),
+            DropdownMenuItem(value: 'no', child: Text('No')),
+          ],
           onChanged: (val) {
-            // Convert "yes"/"no" string to boolean
-            setState(() => _answers[q.fieldKey] = val == 'yes');
+            setState(() => _currentAnswer = val == 'yes');
           },
         );
+
       case QuestionType.number:
         return TextFormField(
-          initialValue: currentValue?.toString() ?? '',
+          initialValue: _currentAnswer?.toString() ?? '',
           keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            border: const OutlineInputBorder(),
             labelText: 'Enter a number',
+            helperText: q.purpose,
+            helperMaxLines: 2,
           ),
           onChanged: (val) =>
-              setState(() => _answers[q.fieldKey] = int.tryParse(val)),
+              setState(() => _currentAnswer = int.tryParse(val)),
         );
+
       case QuestionType.date:
         return ModernDatePicker(
-          initialDate: currentValue is DateTime ? currentValue : null,
+          initialDate: _currentAnswer is DateTime ? _currentAnswer : null,
           labelText: q.fieldKey == 'age'
               ? 'Select your birthday'
               : 'Select date',
@@ -147,86 +168,147 @@ class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage> {
           onDateChanged: (date) {
             setState(() {
               if (q.fieldKey == 'age' && date != null) {
-                _answers['birthday'] = date;
-                _answers['age'] = _calculateAge(date);
+                _currentAnswer = date;
+                // Also store calculated age
+                widget.answers['age'] = _calculateAge(date);
               } else {
-                _answers[q.fieldKey] = date;
+                _currentAnswer = date;
               }
             });
           },
         );
+
       case QuestionType.text:
       default:
         return TextFormField(
-          initialValue: currentValue ?? '',
-          decoration: const InputDecoration(
-            border: OutlineInputBorder(),
+          initialValue: _currentAnswer?.toString() ?? '',
+          decoration: InputDecoration(
+            border: const OutlineInputBorder(),
             labelText: 'Your answer',
+            helperText: q.purpose,
+            helperMaxLines: 2,
           ),
-          onChanged: (val) => setState(() => _answers[q.fieldKey] = val),
+          maxLines: q.questionType == QuestionType.text ? 3 : 1,
+          onChanged: (val) => setState(() => _currentAnswer = val),
         );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Visa Questionnaire')),
-      body: _current == null
-          ? const Center(child: Text('All questions completed.'))
-          : ListView(
-              padding: const EdgeInsets.all(12),
-              children: [
-                // Collapsed answered questions
-                ..._answered.map(_buildCollapsed),
+    final currentQuestion = widget.currentQuestion;
 
-                // Active question
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 400),
-                  child: Card(
-                    key: ValueKey(_current!.fieldKey),
-                    elevation: 6,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    margin: const EdgeInsets.symmetric(vertical: 12),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Text(
-                            _current!.question,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          if (_current!.purpose != null)
-                            Padding(
-                              padding: const EdgeInsets.only(
-                                top: 8,
-                                bottom: 16,
-                              ),
-                              child: Text(
-                                _current!.purpose!,
-                                style: TextStyle(color: Colors.grey.shade700),
-                              ),
-                            ),
-                          _buildInput(_current!, _answers[_current!.fieldKey]),
-                          const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: () =>
-                                _handleNext(_answers[_current!.fieldKey]),
-                            child: const Text('Next'),
-                          ),
-                        ],
+    // Show completion screen if no more questions
+    if (currentQuestion == null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.check_circle, size: 80, color: Colors.green),
+            const SizedBox(height: 24),
+            const Text(
+              'All questions completed!',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: widget.onComplete,
+              child: const Text('Get Visa Recommendation'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Visa Questionnaire'),
+        actions: [
+          // Progress indicator
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                '${widget.totalAnswered} answered',
+                style: const TextStyle(fontSize: 14),
+              ),
+            ),
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Progress bar
+            LinearProgressIndicator(
+              value: widget.totalAnswered > 0
+                  ? widget.totalAnswered / (widget.totalAnswered + 1)
+                  : 0,
+              backgroundColor: Colors.grey[300],
+            ),
+            const SizedBox(height: 24),
+
+            // Current question card
+            Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Question text
+                    Text(
+                      currentQuestion.question,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
+                    const SizedBox(height: 8),
+
+                    // Category badge
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Chip(
+                        label: Text(
+                          currentQuestion.category,
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        backgroundColor: Colors.blue[100],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Input widget
+                    _buildInput(currentQuestion),
+                    const SizedBox(height: 24),
+
+                    // Next button
+                    ElevatedButton(
+                      onPressed: _isSubmitting ? null : _handleNext,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      child: _isSubmitting
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Text('Next', style: TextStyle(fontSize: 16)),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
+          ],
+        ),
+      ),
     );
   }
 }

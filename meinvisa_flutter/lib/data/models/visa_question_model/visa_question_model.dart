@@ -8,9 +8,8 @@ part 'visa_question_model.g.dart';
 @freezed
 abstract class VisaQuestion with _$VisaQuestion {
   const factory VisaQuestion({
-    required String uid, // Supabase-generated UUID
-    required int id, // Optional sequential ID
-    required String category, // e.g. 'universal', 'work:general'
+    required String uid,
+    required String category,
     required String question,
     required String fieldKey,
     @QuestionTypeConverter() required QuestionType questionType,

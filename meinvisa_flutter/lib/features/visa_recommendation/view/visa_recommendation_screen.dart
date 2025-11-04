@@ -1,3 +1,4 @@
+// lib/features/visa_recommendation/view/visa_recommendation_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -16,45 +17,75 @@ class VisaRecommendationScreen extends ConsumerWidget {
     final state = ref.watch(visaRecommendationProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Visa Recommendation'),
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
       body: state.when(
-        data: (questionnaire) {
-          final queue = notifier.queue;
+        data: (_) {
+          final currentQuestion = notifier.currentQuestion;
           final answers = notifier.answers;
-
-          if (queue.isEmpty) {
-            return const Center(
-              child: Text('No questions available at this time.'),
-            );
-          }
+          final totalAnswered = notifier.answeredFields.length;
 
           return ProgressiveQuestionPage(
-            questions: queue,
-            initialAnswers: answers,
+            currentQuestion: currentQuestion,
+            answers: answers,
+            totalAnswered: totalAnswered,
             onNext: (question, answer) async {
               await notifier.answerQuestion(question, answer);
-              if (notifier.queue.isEmpty) {
+            },
+            onComplete: () async {
+              // Show loading dialog
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (context) =>
+                    const Center(child: CircularProgressIndicator()),
+              );
+
+              try {
                 final result = await notifier.handleSubmit();
+
                 if (context.mounted) {
+                  // Close loading dialog
+                  Navigator.of(context).pop();
+
+                  // Navigate to result
                   context.pushReplacement(
                     VisaResultScreen.routeName,
                     extra: result,
                   );
                 }
+              } catch (e) {
+                if (context.mounted) {
+                  // Close loading dialog
+                  Navigator.of(context).pop();
+
+                  // Show error
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('Error: $e')));
+                }
               }
             },
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) =>
-            Center(child: Text('Failed to load questionnaire: $e')),
+        loading: () =>
+            const Scaffold(body: Center(child: CircularProgressIndicator())),
+        error: (e, _) => Scaffold(
+          appBar: AppBar(title: const Text('Error')),
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error, size: 64, color: Colors.red),
+                const SizedBox(height: 16),
+                Text('Failed to load: $e'),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () => ref.invalidate(visaRecommendationProvider),
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

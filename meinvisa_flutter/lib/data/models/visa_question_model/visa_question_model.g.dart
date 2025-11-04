@@ -9,7 +9,6 @@ part of 'visa_question_model.dart';
 _VisaQuestion _$VisaQuestionFromJson(Map<String, dynamic> json) =>
     _VisaQuestion(
       uid: json['uid'] as String,
-      id: (json['id'] as num).toInt(),
       category: json['category'] as String,
       question: json['question'] as String,
       fieldKey: json['field_key'] as String,
@@ -31,7 +30,6 @@ Map<String, dynamic> _$VisaQuestionToJson(
   _VisaQuestion instance,
 ) => <String, dynamic>{
   'uid': instance.uid,
-  'id': instance.id,
   'category': instance.category,
   'question': instance.question,
   'field_key': instance.fieldKey,
