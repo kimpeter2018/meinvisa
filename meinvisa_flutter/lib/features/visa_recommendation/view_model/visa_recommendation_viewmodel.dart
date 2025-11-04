@@ -13,10 +13,9 @@ class VisaRecommendationNotifier
 
   /// Internal state
   final List<VisaQuestion> _queue = [];
-  final List<VisaQuestion> _answeredQuestionsList =
-      []; // Track answered questions in order
+  final List<VisaQuestion> _answeredQuestionsList = [];
   final Map<String, dynamic> _answers = {};
-  final Set<String> _answeredFields = {}; // O(1) lookup
+  final Set<String> _answeredFields = {};
 
   VisaQuestion? _currentQuestion;
   bool _isInitialized = false;
@@ -25,20 +24,20 @@ class VisaRecommendationNotifier
   Future<VisaQuestionnaire?> build() async {
     _repo = ref.read(visaRecommendationRepositoryProvider);
 
+    // Handle re-entry (e.g., navigating back to this screen)
     if (_isInitialized) {
-      DebugLogger().log('🔄 Re-entering questionnaire - using existing state');
-      _logQueueState('RE-ENTRY');
+      _logQueueState('RE-ENTRY', level: LogLevel.info);
       return _repo.getDraft();
     }
 
-    DebugLogger().log('🆕 First-time initialization');
+    _logQueueState('INITIALIZATION START', level: LogLevel.info);
 
-    // Load draft if any (from DB or memory)
+    // Load draft from repository (DB or memory)
     await _repo.loadDraft();
     final draft = _repo.getDraft();
 
     try {
-      // Initialize with universal questions only
+      // Fetch initial questions (universal category)
       final initialQuestions = await _repo.getInitialQuestions();
 
       DebugLogger().log(
@@ -46,66 +45,69 @@ class VisaRecommendationNotifier
       );
 
       if (draft != null && draft.toJson().isNotEmpty) {
+        // Case: User has previous progress - restore state
         DebugLogger().log(
-          '📝 Found existing draft with ${draft.toJson().length} answers',
+          '📝 Restoring from draft with ${draft.toJson().length} answers',
         );
         await _restoreFromDraft(draft, initialQuestions);
       } else {
+        // Case: Fresh start - load initial questions
         DebugLogger().log('✨ Starting fresh questionnaire');
         _queue.addAll(initialQuestions);
         _currentQuestion = _queue.isNotEmpty ? _queue.first : null;
       }
 
       _isInitialized = true;
-      _logQueueState('INITIALIZATION COMPLETE');
+      _logQueueState('INITIALIZATION COMPLETE', level: LogLevel.success);
+
+      return draft;
     } catch (e, st) {
-      DebugLogger().error('❌ Error initializing questionnaire', e, st);
+      DebugLogger().error('❌ Initialization failed', e, st);
+      _logQueueState('INITIALIZATION FAILED', level: LogLevel.error);
       rethrow;
     }
-
-    return draft;
   }
 
-  /// Restore state from draft
+  /// Restore state from saved draft
   Future<void> _restoreFromDraft(
     VisaQuestionnaire draft,
     List<VisaQuestion> initialQuestions,
   ) async {
     final draftData = draft.toJson();
 
-    // Restore answers
+    // Restore answers and answered fields
     _answers.addAll(draftData);
     _answeredFields.addAll(draftData.keys.where((k) => draftData[k] != null));
 
-    DebugLogger().log('🔍 Restoring ${_answeredFields.length} answered fields');
+    DebugLogger().log('🔄 Restoring ${_answeredFields.length} answered fields');
 
-    // Build answered questions list by replaying the questionnaire flow
+    // Replay the question flow to rebuild state
     final tempQueue = List<VisaQuestion>.from(initialQuestions);
 
     for (final question in initialQuestions) {
       final fieldKey = question.fieldKey;
 
       if (_answeredFields.contains(fieldKey)) {
-        // This question was answered
+        // Question was previously answered
         _answeredQuestionsList.add(question);
-
-        // Fetch what questions this answer would have unlocked
         final answer = _answers[fieldKey];
+
         if (answer != null) {
           try {
+            // Fetch what questions this answer unlocked
             final nextQuestions = await _repo.getNextQuestions(
               fieldKey,
               answer,
               _answeredFields.toList(),
             );
 
-            // Add next questions to temp queue if not already answered
+            // Add unlocked questions to temp queue
             for (final next in nextQuestions) {
               if (!_answeredFields.contains(next.fieldKey) &&
                   !tempQueue.any((q) => q.fieldKey == next.fieldKey)) {
                 tempQueue.add(next);
               } else if (_answeredFields.contains(next.fieldKey)) {
-                // This was also answered - add to answered list if not there
+                // This question was also answered - add to answered list
                 if (!_answeredQuestionsList.any(
                   (q) => q.fieldKey == next.fieldKey,
                 )) {
@@ -131,145 +133,210 @@ class VisaRecommendationNotifier
     // Set current question to first unanswered
     _currentQuestion = _queue.isNotEmpty ? _queue.first : null;
 
-    DebugLogger().log('✅ Restored state:');
-    DebugLogger().log(
-      '   - Answered: ${_answeredQuestionsList.length} questions',
-    );
-    DebugLogger().log('   - Remaining: ${_queue.length} questions');
-    DebugLogger().log('   - Current: ${_currentQuestion?.fieldKey ?? "NONE"}');
+    _logQueueState('RESTORE COMPLETE', level: LogLevel.success);
   }
 
-  /// Log current queue state for debugging
-  void _logQueueState(String phase) {
-    DebugLogger().log('═══════════════════════════════════════');
-    DebugLogger().log('📊 QUEUE STATE - $phase');
-    DebugLogger().log('═══════════════════════════════════════');
+  /// Enhanced queue state logging
+  void _logQueueState(String phase, {LogLevel level = LogLevel.info}) {
+    final icon = _getLogIcon(level);
+    final separator = '═' * 50;
+
+    DebugLogger().log('\n$separator');
+    DebugLogger().log('$icon QUEUE STATE - $phase');
+    DebugLogger().log(separator);
     DebugLogger().log(
-      'Current Question: ${_currentQuestion?.fieldKey ?? "NONE"}',
+      '📍 Current Question: ${_currentQuestion?.fieldKey ?? "NONE"}',
     );
-    DebugLogger().log('Answered Count: ${_answeredQuestionsList.length}');
-    DebugLogger().log('Queue Size: ${_queue.length}');
-    DebugLogger().log('Total Answered Fields: ${_answeredFields.length}');
+    DebugLogger().log('✅ Answered: ${_answeredQuestionsList.length} questions');
+    DebugLogger().log('⏳ Queued: ${_queue.length} questions');
+    DebugLogger().log('📊 Total Fields: ${_answeredFields.length}');
 
     if (_answeredQuestionsList.isNotEmpty) {
       DebugLogger().log('\n📝 Answered Questions:');
       for (var i = 0; i < _answeredQuestionsList.length; i++) {
         final q = _answeredQuestionsList[i];
         final answer = _answers[q.fieldKey];
-        DebugLogger().log('   ${i + 1}. ${q.fieldKey} = $answer');
+        final answerStr = _formatAnswerForLog(answer);
+        DebugLogger().log('   ${i + 1}. ${q.fieldKey} = $answerStr');
       }
     }
 
     if (_queue.isNotEmpty) {
-      DebugLogger().log('\n⏳ Queue:');
+      DebugLogger().log('\n⏳ Remaining Queue:');
       for (var i = 0; i < _queue.length; i++) {
         final q = _queue[i];
-        DebugLogger().log('   ${i + 1}. ${q.fieldKey} (${q.category})');
+        final isCurrent = q.fieldKey == _currentQuestion?.fieldKey;
+        final marker = isCurrent ? '➤' : ' ';
+        DebugLogger().log('  $marker ${i + 1}. ${q.fieldKey} (${q.category})');
       }
     }
 
-    DebugLogger().log('═══════════════════════════════════════\n');
+    DebugLogger().log('$separator\n');
+  }
+
+  String _getLogIcon(LogLevel level) {
+    switch (level) {
+      case LogLevel.info:
+        return '📊';
+      case LogLevel.success:
+        return '✅';
+      case LogLevel.warning:
+        return '⚠️';
+      case LogLevel.error:
+        return '❌';
+    }
+  }
+
+  String _formatAnswerForLog(dynamic answer) {
+    if (answer == null) return 'null';
+    if (answer is bool) return answer ? 'Yes' : 'No';
+    if (answer is DateTime) {
+      return '${answer.day}/${answer.month}/${answer.year}';
+    }
+    if (answer is String && answer.length > 30) {
+      return '${answer.substring(0, 27)}...';
+    }
+    return answer.toString();
   }
 
   /// ============================================
   /// PUBLIC GETTERS
   /// ============================================
 
-  VisaQuestion? get currentQuestion {
-    _logQueueState('GET_CURRENT_QUESTION');
-    return _currentQuestion;
-  }
+  VisaQuestion? get currentQuestion => _currentQuestion;
+  List<VisaQuestion> get queue => List.unmodifiable(_queue);
+  List<VisaQuestion> get answeredQuestionsList =>
+      List.unmodifiable(_answeredQuestionsList);
+  Map<String, dynamic> get answers => Map.unmodifiable(_answers);
+  Set<String> get answeredFields => Set.unmodifiable(_answeredFields);
 
-  List<VisaQuestion> get queue => _queue;
-  List<VisaQuestion> get answeredQuestionsList => _answeredQuestionsList;
-  Map<String, dynamic> get answers => _answers;
-  Set<String> get answeredFields => _answeredFields;
+  bool get isComplete =>
+      _currentQuestion == null && _answeredQuestionsList.isNotEmpty;
 
   /// ============================================
   /// ANSWER HANDLING
   /// ============================================
 
   Future<void> answerQuestion(VisaQuestion q, dynamic answer) async {
-    DebugLogger().log('\n🎯 Answering: ${q.fieldKey} = $answer');
+    _logQueueState('BEFORE ANSWER: ${q.fieldKey}', level: LogLevel.info);
 
     // Check if this is a re-answer (editing previous question)
     final isReAnswer = _answeredFields.contains(q.fieldKey);
 
     if (isReAnswer) {
-      DebugLogger().log('   ↩️ Re-answering previous question');
-
-      // Find index of this question in answered list
-      final index = _answeredQuestionsList.indexWhere(
-        (aq) => aq.fieldKey == q.fieldKey,
-      );
-
-      if (index != -1) {
-        // Remove all questions after this one
-        final removedQuestions = _answeredQuestionsList.sublist(index + 1);
-        _answeredQuestionsList.removeRange(
-          index + 1,
-          _answeredQuestionsList.length,
-        );
-
-        // Remove their answers
-        for (final removed in removedQuestions) {
-          _answers.remove(removed.fieldKey);
-          _answeredFields.remove(removed.fieldKey);
-        }
-
-        // Clear queue and rebuild
-        _queue.clear();
-
-        DebugLogger().log(
-          '   🗑️ Removed ${removedQuestions.length} subsequent answers',
-        );
-      }
+      DebugLogger().log('↩️ Re-answering: ${q.fieldKey}');
+      await _handleReAnswer(q, answer);
+    } else {
+      DebugLogger().log('🆕 New answer: ${q.fieldKey} = $answer');
+      await _handleNewAnswer(q, answer);
     }
 
+    _logQueueState('AFTER ANSWER: ${q.fieldKey}', level: LogLevel.success);
+
+    // Notify listeners
+    state = AsyncData(VisaQuestionnaire.fromJson(_answers));
+  }
+
+  /// Handle new answer (forward progress)
+  Future<void> _handleNewAnswer(VisaQuestion q, dynamic answer) async {
     // Store answer
     _answers[q.fieldKey] = answer;
     _answeredFields.add(q.fieldKey);
 
-    // Add to answered questions list if not already there
-    if (!_answeredQuestionsList.any((aq) => aq.fieldKey == q.fieldKey)) {
-      _answeredQuestionsList.add(q);
-    }
+    // Add to answered list
+    _answeredQuestionsList.add(q);
 
-    // Remove current question from queue
+    // Remove from queue
     _queue.removeWhere((x) => x.fieldKey == q.fieldKey);
 
-    // Fetch next questions based on this answer
+    // Fetch next questions
+    await _fetchAndEnqueueNextQuestions(q.fieldKey, answer);
+
+    // Update current question
+    _currentQuestion = _queue.isNotEmpty ? _queue.first : null;
+
+    // Save draft
+    await _repo.saveDraft(VisaQuestionnaire.fromJson(_answers));
+  }
+
+  /// Handle re-answer (editing previous question)
+  Future<void> _handleReAnswer(VisaQuestion q, dynamic answer) async {
+    // Find index of this question in answered list
+    final index = _answeredQuestionsList.indexWhere(
+      (aq) => aq.fieldKey == q.fieldKey,
+    );
+
+    if (index == -1) {
+      DebugLogger().error(
+        '⚠️ Question not found in answered list: ${q.fieldKey}',
+      );
+      return;
+    }
+
+    // Remove all questions after this one
+    final removedQuestions = _answeredQuestionsList.sublist(index + 1);
+    _answeredQuestionsList.removeRange(
+      index + 1,
+      _answeredQuestionsList.length,
+    );
+
+    // Remove their answers
+    for (final removed in removedQuestions) {
+      _answers.remove(removed.fieldKey);
+      _answeredFields.remove(removed.fieldKey);
+    }
+
+    DebugLogger().log(
+      '🗑️ Removed ${removedQuestions.length} subsequent answers',
+    );
+
+    // Clear queue (will be rebuilt)
+    _queue.clear();
+
+    // Update this question's answer
+    _answers[q.fieldKey] = answer;
+
+    // Fetch next questions based on new answer
+    await _fetchAndEnqueueNextQuestions(q.fieldKey, answer);
+
+    // Update current question
+    _currentQuestion = _queue.isNotEmpty ? _queue.first : null;
+
+    // Save draft
+    await _repo.saveDraft(VisaQuestionnaire.fromJson(_answers));
+  }
+
+  /// Fetch and enqueue next questions based on answer
+  Future<void> _fetchAndEnqueueNextQuestions(
+    String fieldKey,
+    dynamic answer,
+  ) async {
     try {
       final nextQuestions = await _repo.getNextQuestions(
-        q.fieldKey,
+        fieldKey,
         answer,
         _answeredFields.toList(),
       );
 
-      DebugLogger().log('   📥 Fetched ${nextQuestions.length} next questions');
+      DebugLogger().log(
+        '📥 Fetched ${nextQuestions.length} next questions for $fieldKey',
+      );
 
-      // Add new questions to queue
+      // Add new questions to queue (avoid duplicates)
       for (final newQ in nextQuestions) {
-        if (!_answeredFields.contains(newQ.fieldKey) &&
-            !_queue.any((existing) => existing.fieldKey == newQ.fieldKey)) {
+        final isDuplicate =
+            _answeredFields.contains(newQ.fieldKey) ||
+            _queue.any((existing) => existing.fieldKey == newQ.fieldKey);
+
+        if (!isDuplicate) {
           _queue.add(newQ);
-          DebugLogger().log('      + Added: ${newQ.fieldKey}');
+          DebugLogger().log('  ➕ Enqueued: ${newQ.fieldKey}');
+        } else {
+          DebugLogger().log('  ⏭️ Skipped duplicate: ${newQ.fieldKey}');
         }
       }
-
-      // Update current question
-      _currentQuestion = _queue.isNotEmpty ? _queue.first : null;
-
-      // Save draft asynchronously
-      await _repo.saveDraft(VisaQuestionnaire.fromJson(_answers));
-
-      _logQueueState('AFTER ANSWER');
-
-      // Notify listeners
-      state = AsyncData(VisaQuestionnaire.fromJson(_answers));
     } catch (e, st) {
       DebugLogger().error('❌ Error fetching next questions', e, st);
-      state = AsyncError(e, st);
       rethrow;
     }
   }
@@ -287,7 +354,7 @@ class VisaRecommendationNotifier
     _queue.insert(0, q);
     _currentQuestion = q;
 
-    _logQueueState('EDIT_QUESTION');
+    _logQueueState('EDIT_QUESTION', level: LogLevel.info);
 
     state = AsyncData(VisaQuestionnaire.fromJson(_answers));
   }
@@ -298,13 +365,12 @@ class VisaRecommendationNotifier
 
   Future<VisaEligibilityResult> handleSubmit() async {
     DebugLogger().log('\n📤 Submitting questionnaire');
+    _logQueueState('BEFORE_SUBMIT', level: LogLevel.info);
 
     final data = _repo.getDraft();
     if (data == null) {
       throw Exception('No questionnaire data to submit.');
     }
-
-    _logQueueState('BEFORE_SUBMIT');
 
     state = const AsyncLoading();
 
@@ -325,7 +391,7 @@ class VisaRecommendationNotifier
   /// ============================================
 
   void clearDraft() {
-    DebugLogger().log('🗑️ Clearing draft');
+    DebugLogger().log('🗑️ Clearing all data');
 
     _repo.clearDraft();
     _answers.clear();
@@ -335,6 +401,10 @@ class VisaRecommendationNotifier
     _currentQuestion = null;
     _isInitialized = false;
 
+    _logQueueState('AFTER_CLEAR', level: LogLevel.info);
+
     state = const AsyncData(null);
   }
 }
+
+enum LogLevel { info, success, warning, error }
