@@ -7,30 +7,31 @@ import 'package:meinvisa/data/models/visa_eligibility_result_model/visa_eligibil
 import 'package:meinvisa/data/providers/visa_recommendation_provider.dart';
 import 'package:meinvisa/features/visa_recommendation/repository/visa_recommendation_repository.dart';
 
-/// ============================================
-/// OPTIMIZED VIEWMODEL WITH O(1) BRANCHING
-/// ============================================
-///
-/// Key optimizations:
-/// 1. Questions fetched lazily from PostgreSQL function
-/// 2. Only load next questions when previous is answered
-/// 3. Use Set for O(1) answered field lookups
-/// 4. Cache hydrated questions to minimize DB calls
-///
 class VisaRecommendationNotifier
     extends AutoDisposeAsyncNotifier<VisaQuestionnaire?> {
   late final VisaRecommendationRepository _repo;
 
   /// Internal state
   final List<VisaQuestion> _queue = [];
+  final List<VisaQuestion> _answeredQuestionsList =
+      []; // Track answered questions in order
   final Map<String, dynamic> _answers = {};
   final Set<String> _answeredFields = {}; // O(1) lookup
 
   VisaQuestion? _currentQuestion;
+  bool _isInitialized = false;
 
   @override
   Future<VisaQuestionnaire?> build() async {
     _repo = ref.read(visaRecommendationRepositoryProvider);
+
+    if (_isInitialized) {
+      DebugLogger().log('🔄 Re-entering questionnaire - using existing state');
+      _logQueueState('RE-ENTRY');
+      return _repo.getDraft();
+    }
+
+    DebugLogger().log('🆕 First-time initialization');
 
     // Load draft if any (from DB or memory)
     await _repo.loadDraft();
@@ -39,89 +40,205 @@ class VisaRecommendationNotifier
     try {
       // Initialize with universal questions only
       final initialQuestions = await _repo.getInitialQuestions();
-      _queue.addAll(initialQuestions);
-      DebugLogger().log('Initial questions: ${initialQuestions.length}');
-      DebugLogger().log('Draft answers: ${draft?.toJson()}');
+
       DebugLogger().log(
-        'Queue after filtering: ${_queue.map((q) => q.fieldKey).toList()}',
+        '📥 Loaded ${initialQuestions.length} initial questions',
       );
-      DebugLogger().log('Current question: $_currentQuestion');
 
-      if (_queue.isNotEmpty) {
-        _currentQuestion = _queue.first;
+      if (draft != null && draft.toJson().isNotEmpty) {
+        DebugLogger().log(
+          '📝 Found existing draft with ${draft.toJson().length} answers',
+        );
+        await _restoreFromDraft(draft, initialQuestions);
+      } else {
+        DebugLogger().log('✨ Starting fresh questionnaire');
+        _queue.addAll(initialQuestions);
+        _currentQuestion = _queue.isNotEmpty ? _queue.first : null;
       }
 
-      // Restore answers if draft exists
-      if (draft != null) {
-        _answers.addAll(draft.toJson());
-        _answeredFields.addAll(draft.toJson().keys);
-
-        // Remove already-answered questions from queue
-        _queue.removeWhere((q) => _answeredFields.contains(q.fieldKey));
-
-        // Reconstruct question queue by replaying answers
-        await _reconstructQueue(draft);
-      }
+      _isInitialized = true;
+      _logQueueState('INITIALIZATION COMPLETE');
     } catch (e, st) {
-      DebugLogger().error('Error initializing questionnaire', e, st);
+      DebugLogger().error('❌ Error initializing questionnaire', e, st);
+      rethrow;
     }
 
     return draft;
   }
 
-  /// Reconstruct queue by replaying all answers (used when loading draft)
-  Future<void> _reconstructQueue(VisaQuestionnaire draft) async {
-    final answers = draft.toJson();
+  /// Restore state from draft
+  Future<void> _restoreFromDraft(
+    VisaQuestionnaire draft,
+    List<VisaQuestion> initialQuestions,
+  ) async {
+    final draftData = draft.toJson();
 
-    // Sort by some heuristic (e.g., order they were likely answered)
-    // For now, we'll just use the keys as-is
-    for (final entry in answers.entries) {
-      if (entry.value != null) {
-        // Fetch next questions without adding to queue
-        final nextQuestions = await _repo.getNextQuestions(
-          entry.key,
-          entry.value,
-          _answeredFields.toList(),
-        );
+    // Restore answers
+    _answers.addAll(draftData);
+    _answeredFields.addAll(draftData.keys.where((k) => draftData[k] != null));
 
-        // Add questions that haven't been answered yet
-        for (final q in nextQuestions) {
-          if (!_answeredFields.contains(q.fieldKey) &&
-              !_queue.any((existing) => existing.fieldKey == q.fieldKey)) {
-            _queue.add(q);
+    DebugLogger().log('🔍 Restoring ${_answeredFields.length} answered fields');
+
+    // Build answered questions list by replaying the questionnaire flow
+    final tempQueue = List<VisaQuestion>.from(initialQuestions);
+
+    for (final question in initialQuestions) {
+      final fieldKey = question.fieldKey;
+
+      if (_answeredFields.contains(fieldKey)) {
+        // This question was answered
+        _answeredQuestionsList.add(question);
+
+        // Fetch what questions this answer would have unlocked
+        final answer = _answers[fieldKey];
+        if (answer != null) {
+          try {
+            final nextQuestions = await _repo.getNextQuestions(
+              fieldKey,
+              answer,
+              _answeredFields.toList(),
+            );
+
+            // Add next questions to temp queue if not already answered
+            for (final next in nextQuestions) {
+              if (!_answeredFields.contains(next.fieldKey) &&
+                  !tempQueue.any((q) => q.fieldKey == next.fieldKey)) {
+                tempQueue.add(next);
+              } else if (_answeredFields.contains(next.fieldKey)) {
+                // This was also answered - add to answered list if not there
+                if (!_answeredQuestionsList.any(
+                  (q) => q.fieldKey == next.fieldKey,
+                )) {
+                  _answeredQuestionsList.add(next);
+                }
+              }
+            }
+          } catch (e) {
+            DebugLogger().error(
+              '⚠️ Error fetching next questions for $fieldKey',
+              e,
+            );
           }
         }
       }
     }
 
+    // Remaining unanswered questions go to queue
+    _queue.addAll(
+      tempQueue.where((q) => !_answeredFields.contains(q.fieldKey)),
+    );
+
     // Set current question to first unanswered
-    if (_queue.isNotEmpty) {
-      _currentQuestion = _queue.first;
+    _currentQuestion = _queue.isNotEmpty ? _queue.first : null;
+
+    DebugLogger().log('✅ Restored state:');
+    DebugLogger().log(
+      '   - Answered: ${_answeredQuestionsList.length} questions',
+    );
+    DebugLogger().log('   - Remaining: ${_queue.length} questions');
+    DebugLogger().log('   - Current: ${_currentQuestion?.fieldKey ?? "NONE"}');
+  }
+
+  /// Log current queue state for debugging
+  void _logQueueState(String phase) {
+    DebugLogger().log('═══════════════════════════════════════');
+    DebugLogger().log('📊 QUEUE STATE - $phase');
+    DebugLogger().log('═══════════════════════════════════════');
+    DebugLogger().log(
+      'Current Question: ${_currentQuestion?.fieldKey ?? "NONE"}',
+    );
+    DebugLogger().log('Answered Count: ${_answeredQuestionsList.length}');
+    DebugLogger().log('Queue Size: ${_queue.length}');
+    DebugLogger().log('Total Answered Fields: ${_answeredFields.length}');
+
+    if (_answeredQuestionsList.isNotEmpty) {
+      DebugLogger().log('\n📝 Answered Questions:');
+      for (var i = 0; i < _answeredQuestionsList.length; i++) {
+        final q = _answeredQuestionsList[i];
+        final answer = _answers[q.fieldKey];
+        DebugLogger().log('   ${i + 1}. ${q.fieldKey} = $answer');
+      }
     }
+
+    if (_queue.isNotEmpty) {
+      DebugLogger().log('\n⏳ Queue:');
+      for (var i = 0; i < _queue.length; i++) {
+        final q = _queue[i];
+        DebugLogger().log('   ${i + 1}. ${q.fieldKey} (${q.category})');
+      }
+    }
+
+    DebugLogger().log('═══════════════════════════════════════\n');
   }
 
   /// ============================================
   /// PUBLIC GETTERS
   /// ============================================
 
-  VisaQuestion? get currentQuestion => _currentQuestion;
+  VisaQuestion? get currentQuestion {
+    _logQueueState('GET_CURRENT_QUESTION');
+    return _currentQuestion;
+  }
+
   List<VisaQuestion> get queue => _queue;
+  List<VisaQuestion> get answeredQuestionsList => _answeredQuestionsList;
   Map<String, dynamic> get answers => _answers;
   Set<String> get answeredFields => _answeredFields;
 
   /// ============================================
-  /// ANSWER HANDLING (O(1) + O(log n) branching)
+  /// ANSWER HANDLING
   /// ============================================
 
   Future<void> answerQuestion(VisaQuestion q, dynamic answer) async {
+    DebugLogger().log('\n🎯 Answering: ${q.fieldKey} = $answer');
+
+    // Check if this is a re-answer (editing previous question)
+    final isReAnswer = _answeredFields.contains(q.fieldKey);
+
+    if (isReAnswer) {
+      DebugLogger().log('   ↩️ Re-answering previous question');
+
+      // Find index of this question in answered list
+      final index = _answeredQuestionsList.indexWhere(
+        (aq) => aq.fieldKey == q.fieldKey,
+      );
+
+      if (index != -1) {
+        // Remove all questions after this one
+        final removedQuestions = _answeredQuestionsList.sublist(index + 1);
+        _answeredQuestionsList.removeRange(
+          index + 1,
+          _answeredQuestionsList.length,
+        );
+
+        // Remove their answers
+        for (final removed in removedQuestions) {
+          _answers.remove(removed.fieldKey);
+          _answeredFields.remove(removed.fieldKey);
+        }
+
+        // Clear queue and rebuild
+        _queue.clear();
+
+        DebugLogger().log(
+          '   🗑️ Removed ${removedQuestions.length} subsequent answers',
+        );
+      }
+    }
+
     // Store answer
     _answers[q.fieldKey] = answer;
     _answeredFields.add(q.fieldKey);
 
+    // Add to answered questions list if not already there
+    if (!_answeredQuestionsList.any((aq) => aq.fieldKey == q.fieldKey)) {
+      _answeredQuestionsList.add(q);
+    }
+
     // Remove current question from queue
     _queue.removeWhere((x) => x.fieldKey == q.fieldKey);
 
-    // Fetch next questions based on this answer (O(log n) DB query)
+    // Fetch next questions based on this answer
     try {
       final nextQuestions = await _repo.getNextQuestions(
         q.fieldKey,
@@ -129,11 +246,14 @@ class VisaRecommendationNotifier
         _answeredFields.toList(),
       );
 
-      // Add new questions to queue (O(n) but n is small)
+      DebugLogger().log('   📥 Fetched ${nextQuestions.length} next questions');
+
+      // Add new questions to queue
       for (final newQ in nextQuestions) {
         if (!_answeredFields.contains(newQ.fieldKey) &&
             !_queue.any((existing) => existing.fieldKey == newQ.fieldKey)) {
           _queue.add(newQ);
+          DebugLogger().log('      + Added: ${newQ.fieldKey}');
         }
       }
 
@@ -143,15 +263,14 @@ class VisaRecommendationNotifier
       // Save draft asynchronously
       await _repo.saveDraft(VisaQuestionnaire.fromJson(_answers));
 
-      DebugLogger().log(
-        'Answered ${q.fieldKey} = $answer | Queue size: ${_queue.length}',
-      );
+      _logQueueState('AFTER ANSWER');
 
       // Notify listeners
       state = AsyncData(VisaQuestionnaire.fromJson(_answers));
     } catch (e, st) {
-      DebugLogger().error('Error fetching next questions', e, st);
+      DebugLogger().error('❌ Error fetching next questions', e, st);
       state = AsyncError(e, st);
+      rethrow;
     }
   }
 
@@ -159,21 +278,18 @@ class VisaRecommendationNotifier
   /// NAVIGATION HELPERS
   /// ============================================
 
-  /// Jump back to a previously answered question
+  /// Edit a previously answered question
   void editQuestion(VisaQuestion q) {
+    DebugLogger().log('✏️ Editing question: ${q.fieldKey}');
+
     // Move question to front of queue
     _queue.removeWhere((x) => x.fieldKey == q.fieldKey);
     _queue.insert(0, q);
     _currentQuestion = q;
 
-    state = AsyncData(VisaQuestionnaire.fromJson(_answers));
-  }
+    _logQueueState('EDIT_QUESTION');
 
-  /// Get all answered questions for display
-  List<VisaQuestion> getAnsweredQuestions() {
-    // This would require caching all questions we've shown
-    // For now, return empty - implement if needed
-    return [];
+    state = AsyncData(VisaQuestionnaire.fromJson(_answers));
   }
 
   /// ============================================
@@ -181,18 +297,24 @@ class VisaRecommendationNotifier
   /// ============================================
 
   Future<VisaEligibilityResult> handleSubmit() async {
+    DebugLogger().log('\n📤 Submitting questionnaire');
+
     final data = _repo.getDraft();
     if (data == null) {
       throw Exception('No questionnaire data to submit.');
     }
 
+    _logQueueState('BEFORE_SUBMIT');
+
     state = const AsyncLoading();
 
     try {
       final result = await _repo.recommendVisa(data);
+      DebugLogger().log('✅ Received visa recommendation');
       state = AsyncData(data);
       return result;
     } catch (e, st) {
+      DebugLogger().error('❌ Submission failed', e, st);
       state = AsyncError(e, st);
       rethrow;
     }
@@ -203,34 +325,16 @@ class VisaRecommendationNotifier
   /// ============================================
 
   void clearDraft() {
+    DebugLogger().log('🗑️ Clearing draft');
+
     _repo.clearDraft();
     _answers.clear();
     _answeredFields.clear();
+    _answeredQuestionsList.clear();
     _queue.clear();
     _currentQuestion = null;
+    _isInitialized = false;
+
     state = const AsyncData(null);
   }
 }
-
-/// ============================================
-/// COMPLEXITY ANALYSIS
-/// ============================================
-/// 
-/// Time Complexity:
-/// - Initial load: O(n) where n = number of universal questions (~5-10)
-/// - Answer question: O(log n + m) where:
-///   - O(log n) = PostgreSQL query with indexed lookups
-///   - O(m) = Adding m new questions to queue (typically m < 10)
-/// - Total questionnaire: O(k * log n) where k = total questions answered (~20-40)
-///
-/// Space Complexity:
-/// - O(k) for answered fields (Set)
-/// - O(q) for queue (List) where q = unanswered questions (typically < 20)
-/// - Total: O(k + q) ≈ O(k) since k >> q
-///
-/// Database Load:
-/// - Initial: 1 query (universal questions)
-/// - Per answer: 1 query (next questions via function)
-/// - Total: ~20-40 queries for full questionnaire
-/// - All queries indexed and optimized with RLS
-///

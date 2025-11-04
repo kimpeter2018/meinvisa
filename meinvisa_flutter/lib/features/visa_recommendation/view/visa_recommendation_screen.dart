@@ -22,8 +22,10 @@ class VisaRecommendationScreen extends ConsumerWidget {
           final currentQuestion = notifier.currentQuestion;
           final answers = notifier.answers;
           final totalAnswered = notifier.answeredFields.length;
+          final answeredQuestions = notifier.answeredQuestionsList;
 
           return ProgressiveQuestionPage(
+            answeredQuestions: answeredQuestions,
             currentQuestion: currentQuestion,
             answers: answers,
             totalAnswered: totalAnswered,
