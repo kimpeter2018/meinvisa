@@ -1,23 +1,24 @@
 // lib/utils/ranker.ts
 import type { VisaCandidate, VisaQuestionnaireInput } from "../types.ts";
-import { isVisaFreeNationality } from "../utils/nationality.ts";
+import { isVisaFreeNationality, isWorkingHolidayEligible } from "./nationality.ts";
+import { compareLanguageLevel } from "./matchHelpers.ts";
 import visasJson from "../constants/visas.json" with { type: "json" };
 
 /**
- * Helpers and constants
+ * Language level order for scoring
  */
 const LANG_LEVELS = ["NONE", "A1", "A2", "B1", "B2", "C1", "C2"];
 
-function langIndex(level?: string | null) {
+function langIndex(level?: string | null): number {
   if (!level) return 0;
   const idx = LANG_LEVELS.indexOf(level.toUpperCase());
   return idx === -1 ? 0 : idx;
 }
 
 /**
- * Normalizes score into 0..100
+ * Normalizes raw score into 0..100 range
  */
-function normalizeScore(raw: number, min = 0, max = 100) {
+function normalizeScore(raw: number, min = -100, max = 200): number {
   if (Number.isNaN(raw) || !isFinite(raw)) return 0;
   if (raw <= min) return 0;
   if (raw >= max) return 100;
@@ -25,53 +26,66 @@ function normalizeScore(raw: number, min = 0, max = 100) {
 }
 
 /**
+ * Converts snake_case to camelCase
+ */
+function snakeToCamel(str: string): string {
+  return str.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+}
+
+/**
  * Flatten visas.json into array of { code, meta, category }
  */
-function loadAllVisas() {
+function loadAllVisas(): Array<{ code: string; meta: any; category: string }> {
   const list: Array<{ code: string; meta: any; category: string }> = [];
+  
   for (const category of Object.keys(visasJson)) {
     const group = (visasJson as any)[category];
-    if (!group) continue;
+    if (!group || typeof group !== "object") continue;
+    
     for (const code of Object.keys(group)) {
       const meta = group[code];
+      if (!meta || typeof meta !== "object") continue;
+      
       list.push({ code, meta, category });
     }
   }
+  
   return list;
 }
 
 /**
  * Evaluate single criterion key (convention-based)
- *
- * Supported convention examples (keys that might appear in meta.criteria):
- * - "has_degree" -> input.hasDegree boolean
- * - "degree_recognized" -> input.hasAnerkennung boolean
- * - "has_job_offer" -> input.hasJobOffer boolean
- * - "experience_years_2+" -> input.experienceYears >= 2
- * - "experience_years_3+" -> input.experienceYears >= 3
- * - "salary_above_threshold" -> uses meta.thresholds.* (if available), or 'salary_above_50260' numeric in key
- * - "is_it_field" -> input.isItField boolean
- * - "it_experience" -> input.it_experience or input.itExperience boolean
- * - "german_level_B1+" -> language minimum check
- *
- * Special rule for strict requirement:
- * If criterion key starts with "!" (example: "!has_job_offer"), treat it as strict => missing => disqualify
+ * 
+ * Returns:
+ * - met: boolean (true if requirement is satisfied)
+ * - partialFactor: 0..1 (partial credit for near-matches)
+ * - disqualifyIfMissing: boolean (true if this is a strict requirement)
+ * - reason: string (explanation for logging)
+ * - detail: string (additional context)
  */
 function evaluateCriterion(
   keyRaw: string,
   weight: number,
   meta: any,
   input: VisaQuestionnaireInput
-) {
+): {
+  met: boolean;
+  partialFactor: number;
+  disqualifyIfMissing: boolean;
+  reason: string;
+  detail?: string;
+} {
   const result = {
     met: false,
-    partialFactor: 0, // 0..1 partial credit
+    partialFactor: 0,
     disqualifyIfMissing: false,
     reason: "",
     detail: "",
   };
 
   let key = keyRaw;
+  
+  // Check if strict requirement (starts with "!")
   if (key.startsWith("!")) {
     result.disqualifyIfMissing = true;
     key = key.slice(1);
@@ -79,157 +93,250 @@ function evaluateCriterion(
 
   key = key.trim().toLowerCase();
 
-  // boolean fields
+  // ===== BOOLEAN FIELDS =====
+  // Matches: has_*, is_*, personal_route_*
   if (key.startsWith("has_") || key.startsWith("is_") || key.startsWith("personal_route_")) {
-    // map from snake-case to camelCase variations in input
-    const inputKey = key.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+    const inputKey = snakeToCamel(key);
     const val = (input as any)[inputKey];
-    if (val === true) {
-      result.met = true;
-      result.partialFactor = 1;
-    } else {
-      result.met = false;
-      result.partialFactor = 0;
-    }
+    
+    result.met = val === true;
+    result.partialFactor = val ? 1 : 0;
     result.reason = `${inputKey} is ${val ? "present" : "missing"}`;
+    
     return result;
   }
 
-  // experience checks like experience_years_2+
+  // ===== DEGREE RECOGNIZED =====
+  if (key === "has_anerkennung") {
+    const val = input.hasAnerkennung;
+    result.met = val === true;
+    result.partialFactor = val ? 1 : 0;
+    result.reason = `Degree recognition (Anerkennung) is ${val ? "completed" : "missing"}`;
+    
+    return result;
+  }
+
+  // ===== EXPERIENCE YEARS =====
+  // Matches: experience_years_2+, experience_years_3+, etc.
   if (key.startsWith("experience_years")) {
     const match = key.match(/experience_years[_\s]*([0-9]+)\+?/);
     const required = match ? Number(match[1]) : 0;
-    const have = (input.experienceYears ?? (input as any).experience_years ?? 0) as number;
+    const have = (input.experienceYears ?? 0) as number;
+    
     if (have >= required) {
       result.met = true;
       result.partialFactor = 1;
     } else if (required > 0 && have > 0) {
-      // partial credit proportional to have/required (capped)
+      // Partial credit proportional to have/required
       result.partialFactor = Math.min(1, have / required);
-      result.met = result.partialFactor >= 0.8;
+      result.met = result.partialFactor >= 0.8; // Consider "met" if >= 80%
     } else {
       result.partialFactor = 0;
       result.met = false;
     }
-    result.reason = `experience ${have}/${required} years`;
+    
+    result.reason = `Experience ${have}/${required} years`;
+    result.detail = `Partial credit: ${(result.partialFactor * 100).toFixed(0)}%`;
+    
     return result;
   }
 
-  // it_experience or related
+  // ===== IT EXPERIENCE =====
   if (key.includes("it") && (key.includes("experience") || key.includes("exp"))) {
-    const have = !!((input as any).it_experience ?? (input as any).itExperience);
+    const have = !!((input as any).itExperience ?? (input as any).it_experience);
     result.met = have;
     result.partialFactor = have ? 1 : 0;
     result.reason = `IT experience is ${have ? "present" : "absent"}`;
+    
     return result;
   }
 
-  // salary checks
-  // support keys like "salary_above_threshold", "salary_above_50260"
+  // ===== SALARY CHECKS =====
+  // Matches: salary_above_threshold, salary_above_50260, etc.
   if (key.includes("salary")) {
     const salary = (input.salary ?? 0) as number;
-    // 1) Try meta.thresholds - common key names
-    let threshold = undefined;
+    
+    // Try to find threshold from meta.thresholds
+    let threshold: number | undefined;
+    
     if (meta && meta.thresholds) {
-      // pick a threshold heuristically: min_salary_general or min_salary_shortage or first numeric threshold
-      threshold =
+      // Priority order for threshold selection
+      threshold = 
         meta.thresholds.min_salary_general ??
         meta.thresholds.min_salary ??
-        meta.thresholds?.min_salary_shortage ??
-        Object.values(meta.thresholds).find((v: any) => typeof v === "number");
+        meta.thresholds.min_salary_shortage ??
+        Object.values(meta.thresholds).find((v: any) => typeof v === "number") as number;
     }
 
-    // 2) If key contains a numeric part like salary_above_50260
+    // If key contains a numeric part like salary_above_50260
     const numMatch = key.match(/salary_above_([0-9]+)/);
     if (!threshold && numMatch) {
       threshold = Number(numMatch[1]);
     }
 
+    // Default threshold
     if (!threshold) {
-      // fallback threshold for safety
       threshold = 0;
     }
 
     if (salary >= threshold) {
       result.met = true;
       result.partialFactor = 1;
-      result.reason = `salary ${salary} >= threshold ${threshold}`;
+      result.reason = `Salary €${salary} >= threshold €${threshold}`;
+    } else if (salary > 0) {
+      // Partial credit proportional to salary/threshold
+      result.partialFactor = Math.min(1, salary / threshold);
+      result.met = result.partialFactor >= 0.9; // Consider "met" if >= 90%
+      result.reason = `Salary €${salary} vs threshold €${threshold} (${(result.partialFactor * 100).toFixed(0)}%)`;
     } else {
-      // partial credit proportional to salary/threshold
-      const diff = threshold > 0 ? salary / threshold : 0;
-      result.partialFactor = Math.max(0, Math.min(1, diff));
-      result.met = result.partialFactor >= 0.8;
-      result.reason = `salary ${salary} vs threshold ${threshold} (partial ${result.partialFactor.toFixed(2)})`;
+      result.met = false;
+      result.partialFactor = 0;
+      result.reason = `No salary information provided (threshold: €${threshold})`;
     }
+    
     result.detail = `salary:${salary}, threshold:${threshold}`;
+    
     return result;
   }
 
-  // language level checks like german_level_b1+
-  if (key.includes("german_level") || key.includes("english_level") || key.match(/_level_/)) {
-    // extract requested level (eg. ..._b1+)
+  // ===== LANGUAGE LEVEL CHECKS =====
+  // Matches: german_level_B1+, english_level_B2+, etc.
+  if (key.match(/_(german|english|language)_level_/) || key.match(/_level_[a-c][1-2]/i)) {
+    // Extract required level (e.g., B1, A2, etc.)
     const match = key.match(/_(a1|a2|b1|b2|c1|c2)\+?$/i);
-    let required = undefined;
-    if (match) required = match[1].toUpperCase();
-    const which = key.includes("german") ? "germanLevel" : key.includes("english") ? "englishLevel" : null;
-    const haveLevel = which ? ((input as any)[which] as string | undefined) : undefined;
+    const required = match ? match[1].toUpperCase() : undefined;
+    
+    // Determine which language
+    let haveLevel: string | undefined;
+    if (key.includes("german")) {
+      haveLevel = input.germanLevel;
+    } else if (key.includes("english")) {
+      haveLevel = input.englishLevel;
+    }
+    
     const haveIdx = langIndex(haveLevel);
     const reqIdx = required ? langIndex(required) : 0;
-    // score: full credit if haveIdx >= reqIdx, partial if near
+    
+    // Score based on level comparison
     if (haveIdx >= reqIdx && reqIdx > 0) {
       result.met = true;
       result.partialFactor = 1;
     } else if (reqIdx > 0 && haveIdx > 0) {
-      // partial credit proportional to closeness
-      const frac = haveIdx / reqIdx;
-      result.partialFactor = Math.max(0, Math.min(1, frac));
-      result.met = result.partialFactor >= 0.8;
+      // Partial credit for near levels
+      result.partialFactor = Math.min(1, haveIdx / reqIdx);
+      result.met = result.partialFactor >= 0.8; // Consider "met" if >= 80%
     } else {
-      result.met = reqIdx === 0; // if no requirement specified, treat as met
+      result.met = reqIdx === 0; // If no requirement, treat as met
       result.partialFactor = reqIdx === 0 ? 1 : 0;
     }
-    result.reason = `${which} ${haveLevel ?? "NONE"} vs required ${required ?? "any"}`;
+    
+    const langType = key.includes("german") ? "German" : 
+                     key.includes("english") ? "English" : "Language";
+    result.reason = `${langType} level ${haveLevel ?? "NONE"} vs required ${required ?? "any"}`;
+    result.detail = `Partial credit: ${(result.partialFactor * 100).toFixed(0)}%`;
+    
     return result;
   }
 
-  // generic fallback: try to read input field with same name
-  {
-    const inputKey = key.replace(/_([a-z])/g, (_, c) => c.toUpperCase()); // snake -> camel
-    const val = (input as any)[inputKey];
-    if (typeof val === "boolean") {
-      result.met = val === true;
-      result.partialFactor = val ? 1 : 0;
-      result.reason = `${inputKey} boolean is ${val}`;
-      return result;
-    }
-    if (typeof val === "number") {
-      // assume any positive number counts as met
-      result.met = val > 0;
-      result.partialFactor = Math.min(1, val / 10); // arbitrary small partial metric
-      result.reason = `${inputKey} numeric ${val}`;
+  // ===== AGE RANGE =====
+  // Matches: age_between_18_26, age_between_18_30, etc.
+  if (key.startsWith("age_between")) {
+    const match = key.match(/age_between_(\d+)_(\d+)/);
+    if (match && input.age) {
+      const minAge = Number(match[1]);
+      const maxAge = Number(match[2]);
+      const age = input.age;
+      
+      result.met = age >= minAge && age <= maxAge;
+      result.partialFactor = result.met ? 1 : 0;
+      result.reason = `Age ${age} ${result.met ? "within" : "outside"} range ${minAge}-${maxAge}`;
+      
       return result;
     }
   }
 
-  // unknown criterion -> mark optional missing (small penalty)
+  // ===== NATIONALITY CHECKS =====
+  // Matches: nationality_working_holiday
+  if (key.startsWith("nationality_")) {
+    const nationality = input.nationality;
+    
+    if (key.includes("working_holiday")) {
+      const eligible = isWorkingHolidayEligible(nationality);
+      result.met = eligible;
+      result.partialFactor = eligible ? 1 : 0;
+      result.reason = `${nationality ?? "Unknown nationality"} ${eligible ? "is" : "is not"} eligible for working holiday`;
+      
+      return result;
+    }
+    
+    if (key.includes("visa_free")) {
+      const eligible = isVisaFreeNationality(nationality);
+      result.met = eligible;
+      result.partialFactor = eligible ? 1 : 0;
+      result.reason = `${nationality ?? "Unknown nationality"} ${eligible ? "is" : "is not"} visa-free`;
+      
+      return result;
+    }
+  }
+
+  // ===== PROOF OF FUNDS =====
+  if (key === "proof_funds") {
+    const val = input.proofFunds;
+    result.met = val === true;
+    result.partialFactor = val ? 1 : 0;
+    result.reason = `Proof of funds is ${val ? "available" : "missing"}`;
+    
+    return result;
+  }
+
+  // ===== GENERIC FALLBACK =====
+  // Try to read input field with same name (snake_case → camelCase)
+  const inputKey = snakeToCamel(key);
+  const val = (input as any)[inputKey];
+  
+  if (typeof val === "boolean") {
+    result.met = val === true;
+    result.partialFactor = val ? 1 : 0;
+    result.reason = `${inputKey} boolean is ${val}`;
+    return result;
+  }
+  
+  if (typeof val === "number") {
+    // Any positive number counts as met
+    result.met = val > 0;
+    result.partialFactor = Math.min(1, val / 10); // Arbitrary partial metric
+    result.reason = `${inputKey} numeric ${val}`;
+    return result;
+  }
+
+  // Unknown criterion → treat as optional missing
   result.met = false;
   result.partialFactor = 0;
-  result.reason = `Unknown criterion ${keyRaw} (treated as optional missing)`;
+  result.reason = `Unknown criterion "${keyRaw}" (treated as optional missing)`;
+  
   return result;
 }
 
 /**
  * Compute score for a given visa meta + user input
- *
- * - meta.criteria is a map { criterionKey: weight }
- * - meta.minimum_score is the threshold to consider it a valid candidate (not used to compute, but may be used by caller)
- *
- * Returns VisaCandidate object.
+ * 
+ * Returns VisaCandidate object with:
+ * - score: normalized 0-100
+ * - matched: list of satisfied criteria
+ * - missing: list of unsatisfied criteria with severity
+ * - disqualify: true if strict requirements are missing
+ * - reasons: detailed scoring breakdown (for debugging)
  */
-export function computeScoreForVisa(metaContainer: { code: string; meta: any; category: string }, input: VisaQuestionnaireInput): VisaCandidate {
+export function computeScoreForVisa(
+  metaContainer: { code: string; meta: any; category: string },
+  input: VisaQuestionnaireInput
+): VisaCandidate {
   const { code, meta, category } = metaContainer;
-  const rawBase = (meta.basePriority ?? 50) as number; // default base
+  
+  // Start with base priority
+  const rawBase = (meta.basePriority ?? 50) as number;
   let rawScore = rawBase;
+  
   const matched: string[] = [];
   const missing: Array<{ key: string; severity: "critical" | "important" | "optional"; detail?: string }> = [];
   const reasons: string[] = [];
@@ -237,62 +344,108 @@ export function computeScoreForVisa(metaContainer: { code: string; meta: any; ca
 
   const criteria = meta.criteria ?? {};
 
-  // For each criterion key => weight
+  // Evaluate each criterion
   for (const keyRaw of Object.keys(criteria)) {
     const weight = Number(criteria[keyRaw] ?? 0);
     const evalRes = evaluateCriterion(keyRaw, weight, meta, input);
 
-    // scoring policy:
-    // - full match -> + weight
-    // - partial -> + weight * partialFactor
-    // - missing -> - penalty proportional to weight (or heavy if disqualify)
     if (evalRes.met) {
-      rawScore += weight * (evalRes.partialFactor || 1);
+      // Full or partial match
+      const score = weight * (evalRes.partialFactor || 1);
+      rawScore += score;
       matched.push(keyRaw);
-      reasons.push(`Matched ${keyRaw} (+${(weight * (evalRes.partialFactor || 1)).toFixed(1)})`);
+      reasons.push(`✓ ${keyRaw}: +${score.toFixed(1)} (${evalRes.reason})`);
     } else {
-      // treat missing as penalty
-      const penaltyIfStrict = evalRes.disqualifyIfMissing ? 100 : Math.max(6, Math.round(weight * 0.8)); // heuristic
-      const severity: "critical" | "important" | "optional" = evalRes.disqualifyIfMissing ? "critical" : "important";
-      rawScore -= penaltyIfStrict;
-      missing.push({ key: keyRaw, severity, detail: evalRes.reason });
-      reasons.push(`Missing ${keyRaw} (-${penaltyIfStrict})`);
+      // Missing requirement
+      const penaltyBase = evalRes.disqualifyIfMissing ? 100 : Math.max(6, Math.round(weight * 0.8));
+      const penalty = penaltyBase;
+      
+      rawScore -= penalty;
+      
+      const severity: "critical" | "important" | "optional" = 
+        evalRes.disqualifyIfMissing ? "critical" : 
+        weight >= 20 ? "important" : "optional";
+      
+      missing.push({ 
+        key: keyRaw, 
+        severity, 
+        detail: evalRes.reason 
+      });
+      
+      reasons.push(`✗ ${keyRaw}: -${penalty} [${severity}] (${evalRes.reason})`);
+      
       if (evalRes.disqualifyIfMissing) {
-        // if strict missing -> immediate disqualify
         disqualify = true;
       }
     }
   }
 
-  // context modifiers / bonuses
-  // nationality (if visa likely can be applied in-country and user is visa-free)
-  const nationality = input.nationality;
-  if (nationality && meta.canApplyInCountry && isVisaFreeNationality(nationality)) {
-    rawScore += 5;
-    reasons.push("Visa-free entry eases in-country application (+5)");
+  // ===== CONTEXT MODIFIERS (BONUSES) =====
+  
+  // Visa-free nationality + can apply in-country
+  if (input.nationality && meta.canApplyInCountry) {
+    if (isVisaFreeNationality(input.nationality)) {
+      const matchesCountry = meta.canApplyInCountry.some((c: string) => 
+        input.nationality?.toLowerCase().includes(c.toLowerCase())
+      );
+      
+      if (matchesCountry) {
+        rawScore += 5;
+        reasons.push(`✓ Visa-free nationality + in-country application: +5`);
+      }
+    }
   }
 
-  // host agreement bonus for research visas
-  if ((category === "research" || meta.category === "research") && input.hasHostAgreement) {
+  // Research visa + host agreement bonus
+  if ((category === "specialized" || category === "research") && input.hasHostAgreement) {
     rawScore += 15;
-    reasons.push("Host agreement present (+15)");
+    reasons.push(`✓ Host agreement present: +15`);
   }
 
-  // Job offer big bonus for work visas
+  // Work visa + job offer bonus
   if (category === "work" && input.hasJobOffer) {
     rawScore += 15;
-    reasons.push("Job offer (+15)");
+    reasons.push(`✓ Job offer present: +15`);
   }
 
-  // Normalize to 0..100 assuming reasonable raw range -200..200
-  const final = normalizeScore(rawScore, -100, 200);
+  // Student visa + admission bonus
+  if (category === "education" && input.admitted) {
+    rawScore += 10;
+    reasons.push(`✓ University admission: +10`);
+  }
+
+  // Family reunion + family in Germany bonus
+  if (category === "personal" && input.hasFamilyInGermany) {
+    rawScore += 10;
+    reasons.push(`✓ Family in Germany: +10`);
+  }
+
+  // Working holiday eligibility bonus
+  if (code === "working_holiday" && input.nationality) {
+    if (isWorkingHolidayEligible(input.nationality)) {
+      rawScore += 20;
+      reasons.push(`✓ Working Holiday eligible nationality: +20`);
+    }
+  }
+
+  // Language proficiency bonus (cross-category)
+  if (input.germanLevel) {
+    const level = input.germanLevel.toUpperCase();
+    if (["B2", "C1", "C2"].includes(level)) {
+      rawScore += 5;
+      reasons.push(`✓ High German proficiency (${level}): +5`);
+    }
+  }
+
+  // Normalize to 0-100 scale
+  const finalScore = normalizeScore(rawScore, -100, 200);
 
   return {
     code,
     name: meta.name ?? code,
     category,
     meta,
-    score: final,
+    score: finalScore,
     matched,
     missing,
     disqualify,
@@ -301,9 +454,9 @@ export function computeScoreForVisa(metaContainer: { code: string; meta: any; ca
 }
 
 /**
- * Evaluate all visas and return sorted candidates (desc)
+ * Evaluate all visas and return sorted candidates (descending by score)
  */
-export function evaluateAllVisas(input: VisaQuestionnaireInput) {
+export function evaluateAllVisas(input: VisaQuestionnaireInput): VisaCandidate[] {
   const rawList = loadAllVisas();
   const candidates: VisaCandidate[] = [];
 
@@ -316,27 +469,41 @@ export function evaluateAllVisas(input: VisaQuestionnaireInput) {
       nationality: input.nationality,
       salary: input.salary,
       degreeField: input.degreeField || "your field",
-      experienceYears: input.experienceYears || 0
+      experienceYears: input.experienceYears || 0,
+      studyField: input.studyField || "your program",
+      age: input.age,
+      germanLevel: input.germanLevel,
+      performanceCount: input.performanceCount || 0,
+      businessSector: input.businessSector || "your industry"
     };
+    
+    // Include if not disqualified OR if conditionally allowed
+    const allowConditional = !!(m.meta?.allowConditional === true);
+    if (!candidate.disqualify || allowConditional) {
+      candidates.push(candidate);
+    }
   }
 
+  // Sort by score (descending)
   candidates.sort((a, b) => b.score - a.score);
+  
   return candidates;
 }
 
 /**
- * Choose top candidate as recommended (at least one)
+ * Choose top candidate as recommended (highest score)
  */
-export function chooseTopCandidate(candidates: VisaCandidate[]) {
-  if (!candidates || candidates.length === 0) return null;
-  return candidates[0];
+export function chooseTopCandidate(candidates: VisaCandidate[]): VisaCandidate | null {
+  return candidates.length > 0 ? candidates[0] : null;
 }
 
 /**
  * Choose up to two alternatives (exclude recommended)
- *
- * Diversity: prefer different categories for better options coverage
- * Falls back to same category if no other high-scoring options exist
+ * 
+ * Strategy:
+ * 1. Prioritize category diversity (different from recommended)
+ * 2. Fall back to same category if no diverse options with good scores
+ * 3. Always return highest scoring alternatives
  */
 export function chooseUpToTwoAlternatives(
   candidates: VisaCandidate[],
@@ -353,8 +520,13 @@ export function chooseUpToTwoAlternatives(
   
   // First pass: try to get diverse categories
   for (const candidate of available) {
-    // Skip if we already have this category and there are other options
+    // Skip if we already have this category
     if (alts.length > 0 && alts.some(a => a.category === candidate.category)) {
+      continue;
+    }
+    
+    // Skip if same category as recommended and we haven't filled slots yet
+    if (recommended && candidate.category === recommended.category && alts.length < 2) {
       continue;
     }
     
