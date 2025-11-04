@@ -138,7 +138,7 @@ class VisaRecommendationNotifier
     state = const AsyncLoading();
 
     try {
-      final result = await _repo.filterVisa(data);
+      final result = await _repo.recommendVisa(data);
       state = AsyncData(data);
       return result;
     } catch (e, st) {

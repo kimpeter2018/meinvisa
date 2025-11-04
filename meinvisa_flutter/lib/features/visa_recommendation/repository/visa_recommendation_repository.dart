@@ -80,11 +80,11 @@ class VisaRecommendationRepository {
   }
 
   /// ✅ Submit final answers to Edge Function
-  Future<VisaEligibilityResult> filterVisa(VisaQuestionnaire data) async {
+  Future<VisaEligibilityResult> recommendVisa(VisaQuestionnaire data) async {
     DebugLogger().log('Submitting Visa Questionnaire: ${data.toJson()}');
 
     final response = await _supabase.functions.invoke(
-      'visa-filter',
+      'visa-recommendation',
       body: data.toJson(),
       headers: {
         'Authorization': 'Bearer ${dotenv.env['SUPABASE_FUNCTION_KEY']}',
