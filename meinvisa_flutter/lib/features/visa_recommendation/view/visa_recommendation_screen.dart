@@ -32,13 +32,15 @@ class VisaRecommendationScreen extends ConsumerWidget {
             onNext: (question, answer) async {
               await notifier.answerQuestion(question, answer);
             },
+            onEdit: (question) async {
+              notifier.editQuestion(question);
+            },
             onComplete: () async {
               // Show loading dialog
               showDialog(
                 context: context,
                 barrierDismissible: false,
-                builder: (context) =>
-                    const Center(child: CircularProgressIndicator()),
+                builder: (context) => const Center(child: CircularProgressIndicator()),
               );
 
               try {
@@ -49,10 +51,7 @@ class VisaRecommendationScreen extends ConsumerWidget {
                   Navigator.of(context).pop();
 
                   // Navigate to result
-                  context.pushReplacement(
-                    VisaResultScreen.routeName,
-                    extra: result,
-                  );
+                  context.pushReplacement(VisaResultScreen.routeName, extra: result);
                 }
               } catch (e) {
                 if (context.mounted) {
@@ -60,16 +59,13 @@ class VisaRecommendationScreen extends ConsumerWidget {
                   Navigator.of(context).pop();
 
                   // Show error
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(SnackBar(content: Text('Error: $e')));
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
                 }
               }
             },
           );
         },
-        loading: () =>
-            const Scaffold(body: Center(child: CircularProgressIndicator())),
+        loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
         error: (e, _) => Scaffold(
           appBar: AppBar(title: const Text('Error')),
           body: Center(

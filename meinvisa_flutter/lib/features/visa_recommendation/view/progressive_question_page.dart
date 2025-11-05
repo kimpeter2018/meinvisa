@@ -37,8 +37,7 @@ class ProgressiveQuestionPage extends StatefulWidget {
   });
 
   @override
-  State<ProgressiveQuestionPage> createState() =>
-      _ProgressiveQuestionPageState();
+  State<ProgressiveQuestionPage> createState() => _ProgressiveQuestionPageState();
 }
 
 class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage>
@@ -138,7 +137,7 @@ class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage>
     switch (q.questionType) {
       case QuestionType.select:
         return DropdownButtonFormField<String>(
-          value: _currentAnswer as String?,
+          initialValue: _currentAnswer as String?,
           decoration: InputDecoration(
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             filled: true,
@@ -146,37 +145,31 @@ class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage>
             contentPadding: const EdgeInsets.all(16),
           ),
           hint: const Text('Select an option'),
-          items: q.options
-              .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-              .toList(),
+          items: q.options.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
           onChanged: (val) => setState(() => _currentAnswer = val),
         );
 
       case QuestionType.boolean:
-        return Column(
-          children: [
-            RadioListTile<bool>(
-              title: const Text('Yes'),
-              value: true,
-              groupValue: _currentAnswer as bool?,
-              onChanged: (val) => setState(() => _currentAnswer = val),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+        return RadioGroup(
+          onChanged: (val) => setState(() => _currentAnswer = val),
+          groupValue: _currentAnswer as bool?,
+          child: Column(
+            children: [
+              RadioListTile<bool>(
+                title: const Text('Yes'),
+                value: true,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                tileColor: Colors.grey[50],
               ),
-              tileColor: Colors.grey[50],
-            ),
-            const SizedBox(height: 8),
-            RadioListTile<bool>(
-              title: const Text('No'),
-              value: false,
-              groupValue: _currentAnswer as bool?,
-              onChanged: (val) => setState(() => _currentAnswer = val),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+              const SizedBox(height: 8),
+              RadioListTile<bool>(
+                title: const Text('No'),
+                value: false,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                tileColor: Colors.grey[50],
               ),
-              tileColor: Colors.grey[50],
-            ),
-          ],
+            ],
+          ),
         );
 
       case QuestionType.number:
@@ -190,16 +183,13 @@ class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage>
             contentPadding: const EdgeInsets.all(16),
             hintText: 'Enter a number',
           ),
-          onChanged: (val) =>
-              setState(() => _currentAnswer = int.tryParse(val)),
+          onChanged: (val) => setState(() => _currentAnswer = int.tryParse(val)),
         );
 
       case QuestionType.date:
         return ModernDatePicker(
           initialDate: _currentAnswer is DateTime ? _currentAnswer : null,
-          labelText: q.fieldKey == 'birthday'
-              ? 'Select your birthday'
-              : 'Select date',
+          labelText: q.fieldKey == 'birthday' ? 'Select your birthday' : 'Select date',
           hintText: 'DD/MM/YYYY',
           onDateChanged: (date) {
             setState(() {
@@ -273,10 +263,7 @@ class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage>
                 Container(
                   width: 32,
                   height: 32,
-                  decoration: BoxDecoration(
-                    color: Colors.green[50],
-                    shape: BoxShape.circle,
-                  ),
+                  decoration: BoxDecoration(color: Colors.green[50], shape: BoxShape.circle),
                   child: Icon(Icons.check, size: 18, color: Colors.green[700]),
                 ),
                 const SizedBox(width: 12),
@@ -286,10 +273,7 @@ class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage>
                     children: [
                       Text(
                         q.question,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -333,10 +317,7 @@ class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage>
               Align(
                 alignment: Alignment.centerLeft,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: Colors.blue[50],
                     borderRadius: BorderRadius.circular(20),
@@ -357,22 +338,14 @@ class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage>
               // Question text
               Text(
                 q.question,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  height: 1.3,
-                ),
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, height: 1.3),
               ),
 
               if (q.purpose != null && q.purpose!.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 Text(
                   q.purpose!,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                    height: 1.4,
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.grey[600], height: 1.4),
                 ),
               ],
 
@@ -387,9 +360,7 @@ class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage>
                 onPressed: _isSubmitting ? null : _handleNext,
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   elevation: 0,
                 ),
                 child: _isSubmitting
@@ -403,10 +374,7 @@ class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage>
                       )
                     : const Text(
                         'Next',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                       ),
               ),
             ],
@@ -438,15 +406,8 @@ class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage>
               Container(
                 width: 80,
                 height: 80,
-                decoration: BoxDecoration(
-                  color: Colors.green[50],
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.check_circle,
-                  size: 48,
-                  color: Colors.green[600],
-                ),
+                decoration: BoxDecoration(color: Colors.green[50], shape: BoxShape.circle),
+                child: Icon(Icons.check_circle, size: 48, color: Colors.green[600]),
               ),
               const SizedBox(height: 24),
               const Text(
@@ -463,13 +424,8 @@ class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage>
               ElevatedButton(
                 onPressed: widget.onComplete,
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 48,
-                    vertical: 16,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   elevation: 0,
                 ),
                 child: const Text(
@@ -500,10 +456,7 @@ class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage>
               child: Padding(
                 padding: const EdgeInsets.only(right: 16),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: Colors.black,
                     borderRadius: BorderRadius.circular(20),
