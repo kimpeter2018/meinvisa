@@ -4,6 +4,7 @@ import 'package:meinvisa/core/debug/debug_logger.dart';
 import 'package:meinvisa/data/models/visa_question_model/visa_question_model.dart';
 import 'package:meinvisa/data/models/visa_questionnaire_model/visa_questionnaire_model.dart';
 import 'package:meinvisa/data/models/visa_eligibility_result_model/visa_eligibility_result_model.dart';
+import 'package:meinvisa/data/models/visa_recommendation_response_model/visa_recommendation_response_model.dart';
 import 'package:meinvisa/data/providers/visa_recommendation_provider.dart';
 import 'package:meinvisa/features/visa_recommendation/repository/visa_recommendation_repository.dart';
 
@@ -401,7 +402,7 @@ class VisaRecommendationNotifier extends AutoDisposeAsyncNotifier<VisaQuestionna
   /// SUBMISSION
   /// ============================================
 
-  Future<VisaEligibilityResult> handleSubmit() async {
+  Future<VisaRecommendationResponse> handleSubmit() async {
     DebugLogger().log('\n📤 Submitting questionnaire');
     _logQueueState('BEFORE_SUBMIT', level: LogLevel.info);
 

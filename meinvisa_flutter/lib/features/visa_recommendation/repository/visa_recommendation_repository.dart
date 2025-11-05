@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:meinvisa/core/debug/debug_logger.dart';
-import 'package:meinvisa/data/models/visa_eligibility_result_model/visa_eligibility_result_model.dart';
 import 'package:meinvisa/data/models/visa_question_model/visa_question_model.dart';
 import 'package:meinvisa/data/models/visa_questionnaire_model/visa_questionnaire_model.dart';
+import 'package:meinvisa/data/models/visa_recommendation_response_model/visa_recommendation_response_model.dart';
 import 'package:meinvisa/data/repositories/user_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -18,9 +18,10 @@ class VisaRecommendationRepository {
   // In-memory draft (primary source)
   VisaQuestionnaire? _draft;
 
-  // Local storage key
+  // Local storage keys
   static const String _draftKey = 'visa_questionnaire_draft';
   static const String _lastSyncKey = 'visa_draft_last_sync';
+  static const String _hasPendingSyncKey = 'visa_draft_pending_sync';
 
   VisaRecommendationRepository(this._userRepository);
 
@@ -30,32 +31,54 @@ class VisaRecommendationRepository {
 
   VisaQuestionnaire? getDraft() => _draft;
 
-  /// Save draft: Always to SharedPreferences, periodically to Supabase
-  Future<void> saveDraft(VisaQuestionnaire data) async {
+  /// Save draft: Always to SharedPreferences, mark as pending for Supabase
+  Future<void> saveDraft(VisaQuestionnaire data, {bool syncToSupabase = false}) async {
     _draft = data;
 
     // Always save to SharedPreferences (fast, local)
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_draftKey, jsonEncode(data.toJson()));
+
+      if (!syncToSupabase) {
+        // Mark as having pending changes
+        await prefs.setBool(_hasPendingSyncKey, true);
+      }
+
       DebugLogger().log('💾 Draft saved to SharedPreferences');
     } catch (e) {
       DebugLogger().error('❌ Failed to save draft to SharedPreferences', e);
     }
 
-    // Save to Supabase every 5 answers (or on completion)
-    // This reduces DB writes while ensuring sync
-    final answeredCount = data.toJson().entries.where((e) => e.value != null).length;
-
-    if (answeredCount % 5 == 0 || answeredCount > 10) {
+    // Only sync to Supabase if explicitly requested
+    if (syncToSupabase) {
       await _syncToSupabase(data);
     }
   }
 
-  /// Sync to Supabase (background operation)
+  /// Check if there are pending changes not synced to Supabase
+  Future<bool> hasPendingChanges() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_hasPendingSyncKey) ?? false;
+  }
+
+  /// Sync to Supabase (called explicitly by user or on completion)
+  Future<void> syncToSupabase() async {
+    if (_draft == null) {
+      DebugLogger().log('⚠️ No draft to sync');
+      return;
+    }
+
+    await _syncToSupabase(_draft!);
+  }
+
+  /// Internal sync method
   Future<void> _syncToSupabase(VisaQuestionnaire data) async {
     final userId = _supabase.auth.currentUser?.id;
-    if (userId == null) return;
+    if (userId == null) {
+      DebugLogger().error('⚠️ No authenticated user, cannot sync to Supabase');
+      return;
+    }
 
     try {
       await _supabase.from('user_visa_responses').upsert({
@@ -66,11 +89,12 @@ class VisaRecommendationRepository {
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt(_lastSyncKey, DateTime.now().millisecondsSinceEpoch);
+      await prefs.setBool(_hasPendingSyncKey, false);
 
       DebugLogger().log('☁️ Draft synced to Supabase');
     } catch (e) {
       DebugLogger().error('⚠️ Failed to sync draft to Supabase', e);
-      // Don't throw - local draft is still valid
+      rethrow; // Rethrow so caller knows sync failed
     }
   }
 
@@ -91,7 +115,7 @@ class VisaRecommendationRepository {
             (DateTime.now().millisecondsSinceEpoch - lastSync) / (1000 * 60 * 60);
 
         if (hoursSinceSync > 24) {
-          DebugLogger().log('🔄 Local draft is old, checking Supabase...');
+          DebugLogger().log('🔄 Local draft is $hoursSinceSync old, checking Supabase...');
           await _loadFromSupabase();
         }
 
@@ -122,6 +146,7 @@ class VisaRecommendationRepository {
         // Save to SharedPreferences for next time
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString(_draftKey, jsonEncode(_draft!.toJson()));
+        await prefs.setBool(_hasPendingSyncKey, false);
 
         DebugLogger().log('☁️ Draft loaded from Supabase');
       }
@@ -131,33 +156,32 @@ class VisaRecommendationRepository {
   }
 
   /// Clear draft from both storages
-  void clearDraft() {
+  Future<void> clearDraft() async {
     _draft = null;
 
     // Clear SharedPreferences
-    SharedPreferences.getInstance().then((prefs) {
-      prefs.remove(_draftKey);
-      prefs.remove(_lastSyncKey);
-      DebugLogger().log('🗑️ Draft cleared from SharedPreferences');
-    });
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_draftKey);
+    await prefs.remove(_lastSyncKey);
+    await prefs.remove(_hasPendingSyncKey);
+    DebugLogger().log('🗑️ Draft cleared from SharedPreferences');
 
-    // Clear Supabase (async, don't wait)
+    // Clear Supabase
     final userId = _supabase.auth.currentUser?.id;
     if (userId != null) {
-      _supabase
-          .from('user_visa_responses')
-          .delete()
-          .eq('user_id', userId)
-          .then((_) => DebugLogger().log('🗑️ Draft cleared from Supabase'))
-          .catchError((e) => DebugLogger().error('⚠️ Error clearing Supabase', e));
+      try {
+        await _supabase.from('user_visa_responses').delete().eq('user_id', userId);
+        DebugLogger().log('🗑️ Draft cleared from Supabase');
+      } catch (e) {
+        DebugLogger().error('⚠️ Error clearing Supabase', e);
+      }
     }
   }
 
   /// ============================================
-  /// QUESTION FETCHING (Fixed)
+  /// QUESTION FETCHING
   /// ============================================
 
-  /// Get initial questions (universal category only)
   Future<List<VisaQuestion>> getInitialQuestions() async {
     try {
       final response = await _supabase
@@ -177,7 +201,6 @@ class VisaRecommendationRepository {
     }
   }
 
-  /// Get next questions based on current answer
   Future<List<VisaQuestion>> getNextQuestions(
     String fieldKey,
     dynamic answer,
@@ -213,7 +236,6 @@ class VisaRecommendationRepository {
     }
   }
 
-  /// Hydrate questions with dynamic options (countries, occupations)
   Future<List<VisaQuestion>> _hydrateQuestions(List<VisaQuestion> questions) async {
     final cache = <String, List<String>>{};
     final futures = questions.map((q) async {
@@ -232,7 +254,6 @@ class VisaRecommendationRepository {
   /// ============================================
 
   Future<List<String>> getOptions(String source) async {
-    // Check cache first
     if (_optionsCache.containsKey(source)) {
       return _optionsCache[source]!;
     }
@@ -260,7 +281,6 @@ class VisaRecommendationRepository {
         result = [];
     }
 
-    // Cache the result
     _optionsCache[source] = result;
     return result;
   }
@@ -269,7 +289,7 @@ class VisaRecommendationRepository {
   /// VISA RECOMMENDATION (Edge Function)
   /// ============================================
 
-  Future<VisaEligibilityResult> recommendVisa(VisaQuestionnaire data) async {
+  Future<VisaRecommendationResponse> recommendVisa(VisaQuestionnaire data) async {
     DebugLogger().log('📤 Submitting Visa Questionnaire');
 
     final response = await _supabase.functions.invoke(
@@ -291,6 +311,13 @@ class VisaRecommendationRepository {
       throw Exception("Empty response from visa eligibility function.");
     }
 
-    return VisaEligibilityResult.fromJson(response.data as Map<String, dynamic>);
+    // Parse the response data
+    final Map<String, dynamic> responseData = response.data is String
+        ? jsonDecode(response.data)
+        : response.data as Map<String, dynamic>;
+
+    DebugLogger().log('📥 Received response: ${jsonEncode(responseData)}');
+
+    return VisaRecommendationResponse.fromJson(responseData);
   }
 }
