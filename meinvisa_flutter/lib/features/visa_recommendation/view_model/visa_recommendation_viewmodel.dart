@@ -174,7 +174,7 @@ class VisaRecommendationNotifier extends AutoDisposeAsyncNotifier<VisaQuestionna
   }
 
   String _formatAnswerForLog(dynamic answer) {
-    if (answer == null) return 'null';
+    if (answer == null) return 'Not Answered';
     if (answer is bool) return answer ? 'Yes' : 'No';
     if (answer is DateTime) {
       return '${answer.day}/${answer.month}/${answer.year}';
@@ -217,10 +217,17 @@ class VisaRecommendationNotifier extends AutoDisposeAsyncNotifier<VisaQuestionna
 
     _logQueueState('AFTER ANSWER: ${q.fieldKey}', level: LogLevel.success);
 
+    // Handle multi-field answers (like birthday + age)
     if (answer is Map<String, dynamic>) {
       _answers.addAll(answer);
+
+      // Add all fields to answeredFields
+      for (final key in answer.keys) {
+        _answeredFields.add(key);
+      }
     } else {
       _answers[q.fieldKey] = answer;
+      _answeredFields.add(q.fieldKey);
     }
 
     // Notify listeners
@@ -229,9 +236,16 @@ class VisaRecommendationNotifier extends AutoDisposeAsyncNotifier<VisaQuestionna
 
   /// Handle new answer (forward progress)
   Future<void> _handleNewAnswer(VisaQuestion q, dynamic answer) async {
-    // Store answer
-    _answers[q.fieldKey] = answer;
-    _answeredFields.add(q.fieldKey);
+    // Store answer(s)
+    if (answer is Map<String, dynamic>) {
+      _answers.addAll(answer);
+      for (final key in answer.keys) {
+        _answeredFields.add(key);
+      }
+    } else {
+      _answers[q.fieldKey] = answer;
+      _answeredFields.add(q.fieldKey);
+    }
 
     // Add to answered list
     _answeredQuestionsList.add(q);
@@ -240,13 +254,18 @@ class VisaRecommendationNotifier extends AutoDisposeAsyncNotifier<VisaQuestionna
     _queue.removeWhere((x) => x.fieldKey == q.fieldKey);
 
     // Fetch next questions
-    await _fetchAndEnqueueNextQuestions(q.fieldKey, answer);
+    // Fetch next questions (use primary field key)
+    final primaryAnswer = answer is Map<String, dynamic>
+        ? answer[q.fieldKey] ?? answer.values.first
+        : answer;
+
+    await _fetchAndEnqueueNextQuestions(q.fieldKey, primaryAnswer);
 
     // Update current question
     _currentQuestion = _queue.isNotEmpty ? _queue.first : null;
 
     // Save draft
-    await _repo.saveDraft(VisaQuestionnaire.fromJson(_answers));
+    await _repo.saveDraft(VisaQuestionnaire.fromJson(Map<String, dynamic>.from(_answers)));
   }
 
   /// Handle re-answer (editing previous question)
@@ -278,13 +297,56 @@ class VisaRecommendationNotifier extends AutoDisposeAsyncNotifier<VisaQuestionna
     _answers[q.fieldKey] = answer;
 
     // Fetch next questions based on new answer
-    await _fetchAndEnqueueNextQuestions(q.fieldKey, answer);
+    await _rebuildQueueFromAnswers();
 
     // Update current question
     _currentQuestion = _queue.isNotEmpty ? _queue.first : null;
 
     // Save draft
     await _repo.saveDraft(VisaQuestionnaire.fromJson(_answers));
+  }
+
+  /// Rebuild queue by replaying all answers in order
+  Future<void> _rebuildQueueFromAnswers() async {
+    _queue.clear();
+
+    // Get initial questions
+    final initialQuestions = await _repo.getInitialQuestions();
+
+    // Start with initial questions
+    final tempQueue = List<VisaQuestion>.from(initialQuestions);
+
+    // Replay each answered question in order
+    for (final answeredQ in _answeredQuestionsList) {
+      final fieldKey = answeredQ.fieldKey;
+      final answer = _answers[fieldKey];
+
+      if (answer != null) {
+        try {
+          // Fetch what questions this answer unlocked
+          final nextQuestions = await _repo.getNextQuestions(
+            fieldKey,
+            answer,
+            _answeredFields.toList(),
+          );
+
+          // Add unlocked questions to temp queue
+          for (final next in nextQuestions) {
+            if (!_answeredFields.contains(next.fieldKey) &&
+                !tempQueue.any((q) => q.fieldKey == next.fieldKey)) {
+              tempQueue.add(next);
+            }
+          }
+        } catch (e) {
+          DebugLogger().error('⚠️ Error fetching next questions for $fieldKey', e);
+        }
+      }
+    }
+
+    // Add remaining unanswered questions to queue
+    _queue.addAll(tempQueue.where((q) => !_answeredFields.contains(q.fieldKey)));
+
+    DebugLogger().log('🔄 Queue rebuilt: ${_queue.length} questions remaining');
   }
 
   /// Fetch and enqueue next questions based on answer

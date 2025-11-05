@@ -96,13 +96,18 @@ class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage>
     setState(() => _isSubmitting = true);
 
     try {
-      // If birthday, also push age along
+      // If birthday, also pass age along (but don't modify widget.answers)
       if (questionToAnswer.fieldKey == 'birthday') {
-        final age = _calculateAge(_currentAnswer);
-        widget.answers['birthday'] = _currentAnswer;
-        widget.answers['age'] = age;
+        final birthdayDate = _currentAnswer as DateTime;
+        final age = _calculateAge(birthdayDate);
 
-        await widget.onNext(questionToAnswer, {'birthday': _currentAnswer, 'age': age});
+        DebugLogger().log('🎂 Submitting birthday: $birthdayDate with age: $age');
+
+        // Pass both birthday and age in a single answer map
+        await widget.onNext(questionToAnswer, {
+          'birthday': birthdayDate.toIso8601String(), // Convert to string for JSON serialization
+          'age': age,
+        });
       } else {
         await widget.onNext(questionToAnswer, _currentAnswer);
       }
@@ -223,13 +228,7 @@ class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage>
           hintText: 'DD/MM/YYYY',
           onDateChanged: (date) {
             setState(() {
-              if (q.fieldKey == 'birthday' && date != null) {
-                DebugLogger().log('🎂 User selected birthday: $date');
-                _currentAnswer = date;
-                widget.answers['age'] = _calculateAge(date);
-              } else {
-                _currentAnswer = date;
-              }
+              _currentAnswer = date; // Just store the date, don't calculate age here
             });
           },
         );
