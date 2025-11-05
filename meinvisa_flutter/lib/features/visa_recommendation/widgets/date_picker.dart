@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:meinvisa/core/debug/debug_logger.dart';
 
 class ModernDatePicker extends StatefulWidget {
   final DateTime? initialDate;
@@ -30,9 +31,7 @@ class _ModernDatePickerState extends State<ModernDatePicker> {
     super.initState();
     _selectedDate = widget.initialDate;
     _controller = TextEditingController(
-      text: _selectedDate != null
-          ? DateFormat('dd/MM/yyyy').format(_selectedDate!)
-          : '',
+      text: _selectedDate != null ? DateFormat('dd/MM/yyyy').format(_selectedDate!) : '',
     );
   }
 
@@ -77,6 +76,7 @@ class _ModernDatePickerState extends State<ModernDatePicker> {
       widget.onDateChanged(date);
     } catch (e) {
       setState(() {
+        DebugLogger().log('Date parsing error: $e');
         _errorText = 'Invalid date format (DD/MM/YYYY)';
         _selectedDate = null;
       });
@@ -131,10 +131,7 @@ class _ModernDatePickerState extends State<ModernDatePicker> {
 
 class _DateInputFormatter extends TextInputFormatter {
   @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
     final text = newValue.text;
     final buffer = StringBuffer();
     int selectionIndex = newValue.selection.end;
@@ -158,9 +155,7 @@ class _DateInputFormatter extends TextInputFormatter {
 
     return TextEditingValue(
       text: formattedText,
-      selection: TextSelection.collapsed(
-        offset: selectionIndex.clamp(0, formattedText.length),
-      ),
+      selection: TextSelection.collapsed(offset: selectionIndex.clamp(0, formattedText.length)),
     );
   }
 }

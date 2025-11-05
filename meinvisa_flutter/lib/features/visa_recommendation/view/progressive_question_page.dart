@@ -1,21 +1,9 @@
-// lib/features/visa_recommendation/view/progressive_question_page.dart
 import 'package:flutter/material.dart';
 import 'package:meinvisa/core/debug/debug_logger.dart';
 import 'package:meinvisa/data/models/visa_question_model/visa_question_model.dart';
 import 'package:meinvisa/data/models/visa_question_model/question_type.dart';
 import 'package:meinvisa/features/visa_recommendation/widgets/date_picker.dart';
 
-/// ============================================
-/// MODERN PROGRESSIVE QUESTION UI
-/// ============================================
-///
-/// Features:
-/// 1. One question at a time
-/// 2. Answered questions collapse and stack on top
-/// 3. Tap collapsed question to re-answer
-/// 4. Smooth animations
-/// 5. Submit button when all questions answered
-///
 class ProgressiveQuestionPage extends StatefulWidget {
   final VisaQuestion? currentQuestion;
   final Map<String, dynamic> answers;
@@ -46,6 +34,9 @@ class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage>
   dynamic _currentAnswer;
   final ScrollController _scrollController = ScrollController();
 
+  // Track which question is being edited
+  VisaQuestion? _editingQuestion;
+
   @override
   void initState() {
     super.initState();
@@ -53,8 +44,9 @@ class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage>
   }
 
   void _initializeAnswer() {
-    if (widget.currentQuestion != null) {
-      _currentAnswer = widget.answers[widget.currentQuestion!.fieldKey];
+    final questionToShow = _editingQuestion ?? widget.currentQuestion;
+    if (questionToShow != null) {
+      _currentAnswer = widget.answers[questionToShow.fieldKey];
     }
   }
 
@@ -64,6 +56,7 @@ class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage>
 
     // Reset answer when question changes
     if (widget.currentQuestion != oldWidget.currentQuestion) {
+      _editingQuestion = null; // Clear editing state
       _initializeAnswer();
 
       // Scroll to bottom to show new question
@@ -86,7 +79,9 @@ class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage>
   }
 
   Future<void> _handleNext() async {
-    if (widget.currentQuestion == null) return;
+    final questionToAnswer = _editingQuestion ?? widget.currentQuestion;
+
+    if (questionToAnswer == null) return;
 
     if (_currentAnswer == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -101,11 +96,21 @@ class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage>
     setState(() => _isSubmitting = true);
 
     try {
-      await widget.onNext(widget.currentQuestion!, _currentAnswer);
+      // If birthday, also push age along
+      if (questionToAnswer.fieldKey == 'birthday') {
+        final age = _calculateAge(_currentAnswer);
+        widget.answers['birthday'] = _currentAnswer;
+        widget.answers['age'] = age;
+
+        await widget.onNext(questionToAnswer, {'birthday': _currentAnswer, 'age': age});
+      } else {
+        await widget.onNext(questionToAnswer, _currentAnswer);
+      }
 
       setState(() {
         _currentAnswer = null;
         _isSubmitting = false;
+        _editingQuestion = null; // Clear editing state after successful answer
       });
     } catch (e) {
       setState(() => _isSubmitting = false);
@@ -119,6 +124,31 @@ class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage>
         );
       }
     }
+  }
+
+  void _handleEditQuestion(VisaQuestion q) {
+    DebugLogger().log('👆 User tapped collapsed question: ${q.fieldKey}');
+
+    setState(() {
+      _editingQuestion = q;
+      _currentAnswer = widget.answers[q.fieldKey];
+    });
+
+    // Notify parent to handle re-answer logic
+    if (widget.onEdit != null) {
+      widget.onEdit!(q);
+    }
+
+    // Scroll to show the question
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 
   int? _calculateAge(DateTime birthDate) {
@@ -194,6 +224,7 @@ class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage>
           onDateChanged: (date) {
             setState(() {
               if (q.fieldKey == 'birthday' && date != null) {
+                DebugLogger().log('🎂 User selected birthday: $date');
                 _currentAnswer = date;
                 widget.answers['age'] = _calculateAge(date);
               } else {
@@ -231,6 +262,12 @@ class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage>
 
   Widget _buildCollapsedQuestion(VisaQuestion q, int index) {
     final answer = widget.answers[q.fieldKey];
+    final isBeingEdited = _editingQuestion?.fieldKey == q.fieldKey;
+
+    // Don't show as collapsed if currently being edited
+    if (isBeingEdited) {
+      return const SizedBox.shrink();
+    }
 
     return TweenAnimationBuilder<double>(
       duration: Duration(milliseconds: 300 + (index * 50)),
@@ -250,11 +287,7 @@ class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage>
           side: BorderSide(color: Colors.grey[300]!),
         ),
         child: InkWell(
-          onTap: () {
-            if (widget.onEdit != null) {
-              widget.onEdit!(q);
-            }
-          },
+          onTap: () => _handleEditQuestion(q),
           borderRadius: BorderRadius.circular(12),
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -372,9 +405,9 @@ class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage>
                           valueColor: AlwaysStoppedAnimation(Colors.white),
                         ),
                       )
-                    : const Text(
-                        'Next',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    : Text(
+                        _editingQuestion != null ? 'Update' : 'Next',
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                       ),
               ),
             ],
@@ -442,9 +475,9 @@ class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage>
 
   @override
   Widget build(BuildContext context) {
-    final currentQuestion = widget.currentQuestion;
+    final questionToShow = _editingQuestion ?? widget.currentQuestion;
     final hasAnsweredQuestions = widget.answeredQuestions.isNotEmpty;
-    final isComplete = currentQuestion == null && hasAnsweredQuestions;
+    final isComplete = questionToShow == null && hasAnsweredQuestions;
 
     return Scaffold(
       appBar: AppBar(
@@ -478,7 +511,7 @@ class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage>
         controller: _scrollController,
         padding: const EdgeInsets.all(16),
         children: [
-          // Answered questions (collapsed)
+          // Answered questions (collapsed) - only show if not being edited
           ...widget.answeredQuestions.asMap().entries.map((entry) {
             return _buildCollapsedQuestion(entry.value, entry.key);
           }),
@@ -486,8 +519,8 @@ class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage>
           // Active question or completion card
           if (isComplete)
             _buildCompletionCard()
-          else if (currentQuestion != null)
-            _buildActiveQuestion(currentQuestion),
+          else if (questionToShow != null)
+            _buildActiveQuestion(questionToShow),
         ],
       ),
     );

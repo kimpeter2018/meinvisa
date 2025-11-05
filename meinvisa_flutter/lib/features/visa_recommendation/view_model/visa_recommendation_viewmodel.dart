@@ -7,8 +7,7 @@ import 'package:meinvisa/data/models/visa_eligibility_result_model/visa_eligibil
 import 'package:meinvisa/data/providers/visa_recommendation_provider.dart';
 import 'package:meinvisa/features/visa_recommendation/repository/visa_recommendation_repository.dart';
 
-class VisaRecommendationNotifier
-    extends AutoDisposeAsyncNotifier<VisaQuestionnaire?> {
+class VisaRecommendationNotifier extends AutoDisposeAsyncNotifier<VisaQuestionnaire?> {
   late final VisaRecommendationRepository _repo;
 
   /// Internal state
@@ -40,15 +39,11 @@ class VisaRecommendationNotifier
       // Fetch initial questions (universal category)
       final initialQuestions = await _repo.getInitialQuestions();
 
-      DebugLogger().log(
-        '📥 Loaded ${initialQuestions.length} initial questions',
-      );
+      DebugLogger().log('📥 Loaded ${initialQuestions.length} initial questions');
 
       if (draft != null && draft.toJson().isNotEmpty) {
         // Case: User has previous progress - restore state
-        DebugLogger().log(
-          '📝 Restoring from draft with ${draft.toJson().length} answers',
-        );
+        DebugLogger().log('📝 Restoring from draft with ${draft.toJson().length} answers');
         await _restoreFromDraft(draft, initialQuestions);
       } else {
         // Case: Fresh start - load initial questions
@@ -108,27 +103,20 @@ class VisaRecommendationNotifier
                 tempQueue.add(next);
               } else if (_answeredFields.contains(next.fieldKey)) {
                 // This question was also answered - add to answered list
-                if (!_answeredQuestionsList.any(
-                  (q) => q.fieldKey == next.fieldKey,
-                )) {
+                if (!_answeredQuestionsList.any((q) => q.fieldKey == next.fieldKey)) {
                   _answeredQuestionsList.add(next);
                 }
               }
             }
           } catch (e) {
-            DebugLogger().error(
-              '⚠️ Error fetching next questions for $fieldKey',
-              e,
-            );
+            DebugLogger().error('⚠️ Error fetching next questions for $fieldKey', e);
           }
         }
       }
     }
 
     // Remaining unanswered questions go to queue
-    _queue.addAll(
-      tempQueue.where((q) => !_answeredFields.contains(q.fieldKey)),
-    );
+    _queue.addAll(tempQueue.where((q) => !_answeredFields.contains(q.fieldKey)));
 
     // Set current question to first unanswered
     _currentQuestion = _queue.isNotEmpty ? _queue.first : null;
@@ -144,9 +132,7 @@ class VisaRecommendationNotifier
     DebugLogger().log('\n$separator');
     DebugLogger().log('$icon QUEUE STATE - $phase');
     DebugLogger().log(separator);
-    DebugLogger().log(
-      '📍 Current Question: ${_currentQuestion?.fieldKey ?? "NONE"}',
-    );
+    DebugLogger().log('📍 Current Question: ${_currentQuestion?.fieldKey ?? "NONE"}');
     DebugLogger().log('✅ Answered: ${_answeredQuestionsList.length} questions');
     DebugLogger().log('⏳ Queued: ${_queue.length} questions');
     DebugLogger().log('📊 Total Fields: ${_answeredFields.length}');
@@ -205,13 +191,11 @@ class VisaRecommendationNotifier
 
   VisaQuestion? get currentQuestion => _currentQuestion;
   List<VisaQuestion> get queue => List.unmodifiable(_queue);
-  List<VisaQuestion> get answeredQuestionsList =>
-      List.unmodifiable(_answeredQuestionsList);
+  List<VisaQuestion> get answeredQuestionsList => List.unmodifiable(_answeredQuestionsList);
   Map<String, dynamic> get answers => Map.unmodifiable(_answers);
   Set<String> get answeredFields => Set.unmodifiable(_answeredFields);
 
-  bool get isComplete =>
-      _currentQuestion == null && _answeredQuestionsList.isNotEmpty;
+  bool get isComplete => _currentQuestion == null && _answeredQuestionsList.isNotEmpty;
 
   /// ============================================
   /// ANSWER HANDLING
@@ -232,6 +216,12 @@ class VisaRecommendationNotifier
     }
 
     _logQueueState('AFTER ANSWER: ${q.fieldKey}', level: LogLevel.success);
+
+    if (answer is Map<String, dynamic>) {
+      _answers.addAll(answer);
+    } else {
+      _answers[q.fieldKey] = answer;
+    }
 
     // Notify listeners
     state = AsyncData(VisaQuestionnaire.fromJson(_answers));
@@ -262,23 +252,16 @@ class VisaRecommendationNotifier
   /// Handle re-answer (editing previous question)
   Future<void> _handleReAnswer(VisaQuestion q, dynamic answer) async {
     // Find index of this question in answered list
-    final index = _answeredQuestionsList.indexWhere(
-      (aq) => aq.fieldKey == q.fieldKey,
-    );
+    final index = _answeredQuestionsList.indexWhere((aq) => aq.fieldKey == q.fieldKey);
 
     if (index == -1) {
-      DebugLogger().error(
-        '⚠️ Question not found in answered list: ${q.fieldKey}',
-      );
+      DebugLogger().error('⚠️ Question not found in answered list: ${q.fieldKey}');
       return;
     }
 
     // Remove all questions after this one
     final removedQuestions = _answeredQuestionsList.sublist(index + 1);
-    _answeredQuestionsList.removeRange(
-      index + 1,
-      _answeredQuestionsList.length,
-    );
+    _answeredQuestionsList.removeRange(index + 1, _answeredQuestionsList.length);
 
     // Remove their answers
     for (final removed in removedQuestions) {
@@ -286,9 +269,7 @@ class VisaRecommendationNotifier
       _answeredFields.remove(removed.fieldKey);
     }
 
-    DebugLogger().log(
-      '🗑️ Removed ${removedQuestions.length} subsequent answers',
-    );
+    DebugLogger().log('🗑️ Removed ${removedQuestions.length} subsequent answers');
 
     // Clear queue (will be rebuilt)
     _queue.clear();
@@ -307,10 +288,7 @@ class VisaRecommendationNotifier
   }
 
   /// Fetch and enqueue next questions based on answer
-  Future<void> _fetchAndEnqueueNextQuestions(
-    String fieldKey,
-    dynamic answer,
-  ) async {
+  Future<void> _fetchAndEnqueueNextQuestions(String fieldKey, dynamic answer) async {
     try {
       final nextQuestions = await _repo.getNextQuestions(
         fieldKey,
@@ -318,9 +296,7 @@ class VisaRecommendationNotifier
         _answeredFields.toList(),
       );
 
-      DebugLogger().log(
-        '📥 Fetched ${nextQuestions.length} next questions for $fieldKey',
-      );
+      DebugLogger().log('📥 Fetched ${nextQuestions.length} next questions for $fieldKey');
 
       // Add new questions to queue (avoid duplicates)
       for (final newQ in nextQuestions) {
@@ -349,10 +325,10 @@ class VisaRecommendationNotifier
   void editQuestion(VisaQuestion q) {
     DebugLogger().log('✏️ Editing question: ${q.fieldKey}');
 
-    // Move question to front of queue
-    _queue.removeWhere((x) => x.fieldKey == q.fieldKey);
-    _queue.insert(0, q);
-    _currentQuestion = q;
+    // // Move question to front of queue
+    // _queue.removeWhere((x) => x.fieldKey == q.fieldKey);
+    // _queue.insert(0, q);
+    // _currentQuestion = q;
 
     _logQueueState('EDIT_QUESTION', level: LogLevel.info);
 
