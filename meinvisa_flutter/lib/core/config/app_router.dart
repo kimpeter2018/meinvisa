@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:meinvisa/core/debug/debug_overlay.dart';
-import 'package:meinvisa/data/models/visa_eligibility_result_model/visa_eligibility_result_model.dart';
+import 'package:meinvisa/data/models/visa_recommendation_response_model/visa_recommendation_response_model.dart';
 import 'package:meinvisa/features/app/auth_gate.dart';
 import 'package:meinvisa/features/auth/view/email_confirmation_screen.dart';
 import 'package:meinvisa/features/auth/view/login_screen.dart';
@@ -25,14 +25,8 @@ final router = GoRouter(
       name: 'home',
       builder: (context, state) => const HomeLayout(),
     ),
-    GoRoute(
-      path: LoginScreen.routeName,
-      builder: (context, state) => const LoginScreen(),
-    ),
-    GoRoute(
-      path: SignupScreen.routeName,
-      builder: (context, state) => const SignupScreen(),
-    ),
+    GoRoute(path: LoginScreen.routeName, builder: (context, state) => const LoginScreen()),
+    GoRoute(path: SignupScreen.routeName, builder: (context, state) => const SignupScreen()),
     GoRoute(
       path: EmailConfirmationScreen.routeName,
       builder: (context, state) {
@@ -42,10 +36,7 @@ final router = GoRouter(
         return EmailConfirmationScreen(email: email, password: password);
       },
     ),
-    GoRoute(
-      path: OnboardingScreen.routeName,
-      builder: (context, state) => OnboardingScreen(),
-    ),
+    GoRoute(path: OnboardingScreen.routeName, builder: (context, state) => OnboardingScreen()),
     GoRoute(
       path: VisaRecommendationScreen.routeName,
       builder: (context, state) => VisaRecommendationScreen(),
@@ -53,15 +44,12 @@ final router = GoRouter(
     GoRoute(
       path: VisaResultScreen.routeName,
       builder: (context, state) {
-        final result = state.extra! as VisaEligibilityResult;
+        final result = state.extra! as VisaRecommendationResponse;
         return VisaResultScreen(result: result);
       },
     ),
     if (kDebugMode)
-      GoRoute(
-        path: DebugOverlay.routeName,
-        builder: (context, state) => const DebugOverlay(),
-      ),
+      GoRoute(path: DebugOverlay.routeName, builder: (context, state) => const DebugOverlay()),
 
     GoRoute(
       path: '/auth-callback',
@@ -72,9 +60,7 @@ final router = GoRouter(
           future: Supabase.instance.client.auth.getSessionFromUrl(uri),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Scaffold(
-                body: Center(child: CircularProgressIndicator()),
-              );
+              return const Scaffold(body: Center(child: CircularProgressIndicator()));
             }
 
             if (snapshot.hasError) {
