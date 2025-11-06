@@ -43,6 +43,8 @@ class VisaRecommendationRepository {
       if (!syncToSupabase) {
         // Mark as having pending changes
         await prefs.setBool(_hasPendingSyncKey, true);
+        // Update local timestamp to track when draft was last saved
+        await prefs.setInt(_lastSyncKey, DateTime.now().millisecondsSinceEpoch);
       }
 
       DebugLogger().log('💾 Draft saved to SharedPreferences');
@@ -85,7 +87,7 @@ class VisaRecommendationRepository {
         'user_id': userId,
         'responses': data.toJson(),
         'updated_at': DateTime.now().toIso8601String(),
-      });
+      }, onConflict: 'user_id');
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt(_lastSyncKey, DateTime.now().millisecondsSinceEpoch);
@@ -111,8 +113,9 @@ class VisaRecommendationRepository {
 
         // Check if we need to sync from Supabase (if local is old)
         final lastSync = prefs.getInt(_lastSyncKey) ?? 0;
-        final hoursSinceSync =
-            (DateTime.now().millisecondsSinceEpoch - lastSync) / (1000 * 60 * 60);
+        final lastSyncDate = DateTime.fromMillisecondsSinceEpoch(lastSync);
+        final now = DateTime.now();
+        final hoursSinceSync = now.difference(lastSyncDate).inHours;
 
         if (hoursSinceSync > 24) {
           DebugLogger().log('🔄 Local draft is $hoursSinceSync old, checking Supabase...');
