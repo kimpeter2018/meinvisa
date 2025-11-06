@@ -26,6 +26,7 @@ dependencies:
   riverpod: ^2.6.1
   shared_preferences: ^2.5.3
   supabase_flutter: ^2.10.0
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:
