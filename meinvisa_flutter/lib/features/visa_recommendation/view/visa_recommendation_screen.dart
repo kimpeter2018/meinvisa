@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:meinvisa/data/providers/visa_recommendation_provider.dart';
+import 'package:meinvisa/data/providers/visa_recommendation_storage_provider.dart';
 import 'package:meinvisa/features/visa_recommendation/view/progressive_question_page.dart';
 import 'package:meinvisa/features/visa_recommendation/view/result_screen.dart';
 import 'package:meinvisa/features/visa_recommendation/widgets/draft_save_dialog.dart';
@@ -12,10 +13,12 @@ class VisaRecommendationScreen extends ConsumerStatefulWidget {
   const VisaRecommendationScreen({super.key});
 
   @override
-  ConsumerState<VisaRecommendationScreen> createState() => _VisaRecommendationScreenState();
+  ConsumerState<VisaRecommendationScreen> createState() =>
+      _VisaRecommendationScreenState();
 }
 
-class _VisaRecommendationScreenState extends ConsumerState<VisaRecommendationScreen> {
+class _VisaRecommendationScreenState
+    extends ConsumerState<VisaRecommendationScreen> {
   bool _isExiting = false;
 
   Future<bool> _handleWillPop() async {
@@ -50,7 +53,8 @@ class _VisaRecommendationScreenState extends ConsumerState<VisaRecommendationScr
             showDialog(
               context: context,
               barrierDismissible: false,
-              builder: (context) => const Center(child: CircularProgressIndicator()),
+              builder: (context) =>
+                  const Center(child: CircularProgressIndicator()),
             );
           }
 
@@ -98,7 +102,10 @@ class _VisaRecommendationScreenState extends ConsumerState<VisaRecommendationScr
 
       if (mounted) {
         // Close loading dialog if open
-        Navigator.of(context, rootNavigator: true).popUntil((route) => route.isFirst);
+        Navigator.of(
+          context,
+          rootNavigator: true,
+        ).popUntil((route) => route.isFirst);
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -143,21 +150,32 @@ class _VisaRecommendationScreenState extends ConsumerState<VisaRecommendationScr
                 showDialog(
                   context: context,
                   barrierDismissible: false,
-                  builder: (context) => const Center(child: CircularProgressIndicator()),
+                  builder: (context) =>
+                      const Center(child: CircularProgressIndicator()),
                 );
 
                 try {
                   // Sync to cloud before submitting
-                  await ref.read(visaRecommendationRepositoryProvider).syncToSupabase();
+                  await ref
+                      .read(visaRecommendationRepositoryProvider)
+                      .syncToSupabase();
 
                   final result = await notifier.handleSubmit();
+
+                  // Store the result
+                  await ref
+                      .read(visaRecommendationStorageProvider.notifier)
+                      .saveRecommendation(result);
 
                   if (mounted) {
                     // Close loading dialog
                     Navigator.of(context).pop();
 
                     // Navigate to result
-                    context.pushReplacement(VisaResultScreen.routeName, extra: result);
+                    context.pushReplacement(
+                      VisaResultScreen.routeName,
+                      extra: result,
+                    );
                   }
                 } catch (e) {
                   if (mounted) {
@@ -173,7 +191,8 @@ class _VisaRecommendationScreenState extends ConsumerState<VisaRecommendationScr
               },
             );
           },
-          loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+          loading: () =>
+              const Scaffold(body: Center(child: CircularProgressIndicator())),
           error: (e, _) => Scaffold(
             appBar: AppBar(title: const Text('Error')),
             body: Center(
