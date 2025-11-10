@@ -18,6 +18,8 @@ class QuestionTypeConverter implements JsonConverter<QuestionType, String> {
         return QuestionType.checkbox;
       case 'date':
         return QuestionType.date;
+      case 'autocomplete':
+        return QuestionType.autocomplete;
       case 'text':
       default:
         return QuestionType.text;

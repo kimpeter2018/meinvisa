@@ -3,7 +3,7 @@
 // This enables autocomplete, go to definition, etc.
 
 // Setup type definitions for built-in Supabase Runtime APIs
-import {  } from "https://deno.land/std/http/server.ts";
+import {} from "https://deno.land/std/http/server.ts";
 import { evaluateVisa } from "./lib/evaluateVisa.ts";
 
 Deno.serve(async (req) => {
@@ -18,7 +18,9 @@ Deno.serve(async (req) => {
     if (e instanceof Error) {
       errorMessage = e.message;
     }
-    return new Response(JSON.stringify({ error: errorMessage }), { status: 400 });
+    return new Response(JSON.stringify({ error: errorMessage }), {
+      status: 400,
+    });
   }
 });
 

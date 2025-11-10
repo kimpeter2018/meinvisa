@@ -13,17 +13,14 @@ class HomePage extends ConsumerWidget {
   const HomePage({super.key});
 
   Future<void> _handleNewVisaCheck(BuildContext context, WidgetRef ref) async {
-    final hasRecommendation =
-        ref.read(visaRecommendationStorageProvider).value != null;
+    final hasRecommendation = ref.read(visaRecommendationStorageProvider).value != null;
 
     if (hasRecommendation) {
       // Show dialog asking if they want to start a new process
       final shouldStart = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Text('Start New Recommendation?'),
           content: const Text(
             'You already have a visa recommendation. Starting a new one will replace your current results. Continue?',
@@ -44,9 +41,7 @@ class HomePage extends ConsumerWidget {
       if (shouldStart != true) return;
 
       // Clear existing recommendation
-      await ref
-          .read(visaRecommendationStorageProvider.notifier)
-          .clearRecommendation();
+      await ref.read(visaRecommendationStorageProvider.notifier).clearRecommendation();
     }
 
     if (context.mounted) {
@@ -75,7 +70,7 @@ class HomePage extends ConsumerWidget {
         children: [
           // Greeting Section
           userAsync.when(
-            data: (user) => _buildGreetingSection(user?.firstName),
+            data: (user) => _buildGreetingSection(user?.name),
             loading: () => const SizedBox.shrink(),
             error: (_, __) => const SizedBox.shrink(),
           ),
@@ -91,19 +86,12 @@ class HomePage extends ConsumerWidget {
           recommendationAsync.when(
             data: (recommendation) {
               if (recommendation != null) {
-                return _buildRecommendationSection(
-                  context,
-                  ref,
-                  recommendation,
-                );
+                return _buildRecommendationSection(context, ref, recommendation);
               }
               return _buildEmptyRecommendationState(context, ref);
             },
             loading: () => const Center(
-              child: Padding(
-                padding: EdgeInsets.all(32),
-                child: CircularProgressIndicator(),
-              ),
+              child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator()),
             ),
             error: (_, __) => const SizedBox.shrink(),
           ),
@@ -139,22 +127,14 @@ class HomePage extends ConsumerWidget {
             const SizedBox(width: 8),
             Text(
               greeting,
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w500,
-              ),
+              style: TextStyle(fontSize: 16, color: Colors.grey[600], fontWeight: FontWeight.w500),
             ),
           ],
         ),
         const SizedBox(height: 8),
         Text(
           'Welcome back, $displayName',
-          style: const TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-            height: 1.2,
-          ),
+          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, height: 1.2),
         ),
       ],
     );
@@ -164,10 +144,7 @@ class HomePage extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Quick Actions',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
+        const Text('Quick Actions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         const SizedBox(height: 16),
         Wrap(
           spacing: 12,
@@ -183,11 +160,7 @@ class HomePage extends ConsumerWidget {
               label: 'Track Application',
               onTap: () {},
             ),
-            QuickActionCard(
-              icon: Icons.alarm_outlined,
-              label: 'Termin Alerts',
-              onTap: () {},
-            ),
+            QuickActionCard(icon: Icons.alarm_outlined, label: 'Termin Alerts', onTap: () {}),
           ],
         ),
       ],
@@ -217,11 +190,7 @@ class HomePage extends ConsumerWidget {
           const SizedBox(height: 8),
           Text(
             'Get personalized visa recommendations based on your profile',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[700],
-              height: 1.5,
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey[700], height: 1.5),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
@@ -231,9 +200,7 @@ class HomePage extends ConsumerWidget {
             label: const Text('Get Started'),
             style: FilledButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
           ),
         ],
@@ -241,11 +208,7 @@ class HomePage extends ConsumerWidget {
     );
   }
 
-  Widget _buildRecommendationSection(
-    BuildContext context,
-    WidgetRef ref,
-    dynamic recommendation,
-  ) {
+  Widget _buildRecommendationSection(BuildContext context, WidgetRef ref, dynamic recommendation) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -294,9 +257,7 @@ class HomePage extends ConsumerWidget {
           onPressed: () => _viewRecommendation(context, ref),
           style: OutlinedButton.styleFrom(
             minimumSize: const Size(double.infinity, 48),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
           child: const Text('View Full Details'),
         ),
