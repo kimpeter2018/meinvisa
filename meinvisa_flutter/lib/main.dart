@@ -10,14 +10,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final flavor = const String.fromEnvironment('FLAVOR', defaultValue: 'local');
-  DebugLogger().log('🚩 App Flavor: $flavor');
   await dotenv.load(fileName: flavor == 'prod' ? ".env.prod" : ".env.local");
-
-  final supabaseUrl = dotenv.env['SUPABASE_URL'];
-  final supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY'];
-
-  DebugLogger().log('🌐 Supabase URL: $supabaseUrl');
-  DebugLogger().log('🔑 Anon Key: ${supabaseAnonKey?.substring(0, 20)}...');
 
   try {
     await Supabase.initialize(

@@ -212,11 +212,14 @@ class VisaRecommendationRepository {
     try {
       DebugLogger().log('🔍 Fetching next questions for: $fieldKey = $answer');
 
+      // Convert answer to string for database query
+      String answerStr = _convertAnswerToString(answer);
+
       final response = await _supabase.rpc(
         'get_next_questions',
         params: {
           'p_field_key': fieldKey,
-          'p_answer': answer.toString(),
+          'p_answer': answerStr,
           'p_answered_fields': answeredFields,
         },
       );
@@ -232,10 +235,66 @@ class VisaRecommendationRepository {
 
       DebugLogger().log('📥 Retrieved ${questions.length} questions from SQL');
 
+      // Hydrate options for autocomplete/select questions
       return await _hydrateQuestions(questions);
     } catch (e, st) {
       DebugLogger().error('❌ Failed to fetch next questions', e, st);
       return [];
+    }
+  }
+
+  /// Convert answer to string for database comparison
+  String _convertAnswerToString(dynamic answer) {
+    if (answer == null) return '';
+    if (answer is bool) return answer.toString();
+    if (answer is DateTime) return answer.toIso8601String();
+    if (answer is Map) {
+      // For multi-field answers like birthday+age, use the primary field
+      // Find the first non-null value
+      final firstValue = answer.values.firstWhere((v) => v != null, orElse: () => '');
+      if (firstValue is DateTime) return firstValue.toIso8601String();
+      return firstValue.toString();
+    }
+    return answer.toString();
+  }
+
+  /// Validate if all required questions have been answered
+  Future<bool> validateCompleteness(VisaQuestionnaire data) async {
+    final answeredFields = data.toJson().keys.where((k) => data.toJson()[k] != null).toSet();
+
+    try {
+      // Get all questions that should have been asked based on the flow
+      final allQuestions = await _supabase
+          .from('visa_questions')
+          .select('field_key, required, category, purpose_filter')
+          .eq('required', true);
+
+      final requiredQuestions = (allQuestions as List)
+          .where((q) {
+            // Check if this question's purpose matches user's purpose
+            final purposeFilter = q['purpose_filter'] as List?;
+            final userPurpose = data.purpose;
+
+            if (purposeFilter == null || purposeFilter.isEmpty || userPurpose == null) {
+              return q['category'] == 'universal'; // Only universal questions are always required
+            }
+
+            return purposeFilter.contains(userPurpose);
+          })
+          .map((q) => q['field_key'] as String)
+          .toSet();
+
+      final unanswered = requiredQuestions.difference(answeredFields);
+
+      if (unanswered.isNotEmpty) {
+        DebugLogger().log('⚠️ Missing required fields: ${unanswered.join(', ')}');
+        return false;
+      }
+
+      return true;
+    } catch (e) {
+      DebugLogger().error('❌ Error validating completeness', e);
+      return false;
     }
   }
 
@@ -280,6 +339,22 @@ class VisaRecommendationRepository {
         result = (data as List).map((e) => e['title'] as String).toList();
         break;
 
+      case 'universities':
+        final data = await _supabase
+            .from('universities')
+            .select('name')
+            .order('name', ascending: true);
+        result = (data as List).map((e) => e['name'] as String).toList();
+        break;
+
+      case 'degree_fields':
+        final data = await _supabase
+            .from('degree_fields')
+            .select('field')
+            .order('field', ascending: true);
+        result = (data as List).map((e) => e['field'] as String).toList();
+        break;
+
       default:
         result = [];
     }
@@ -295,10 +370,19 @@ class VisaRecommendationRepository {
   Future<VisaRecommendationResponse> recommendVisa(VisaQuestionnaire data) async {
     DebugLogger().log('📤 Submitting Visa Questionnaire');
 
+    final session = Supabase.instance.client.auth.currentSession;
+    final userToken = session?.accessToken;
+
+    if (userToken == null) {
+      throw Exception('User not logged in');
+    }
+
     final response = await _supabase.functions.invoke(
       'visa-recommendation',
       body: data.toJson(),
-      headers: {'Authorization': 'Bearer ${dotenv.env['SUPABASE_FUNCTION_KEY'] ?? ''}'},
+      headers: {
+        'Authorization': 'Bearer $userToken', // user's JWT
+      },
     );
 
     if (response.status >= 400) {

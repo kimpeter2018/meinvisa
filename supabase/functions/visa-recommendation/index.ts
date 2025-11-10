@@ -8,16 +8,26 @@ import { evaluateVisa } from "./lib/evaluateVisa.ts";
 
 Deno.serve(async (req) => {
   try {
+    // Extract the JWT from the header
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Missing or invalid JWT" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    const token = authHeader.split(" ")[1];
+
+    // You can verify the token if needed using Supabase JWT secret
+    // Or simply trust Supabase RLS to enforce permissions
     const body = await req.json();
     const result = evaluateVisa(body);
+
     return new Response(JSON.stringify(result, null, 2), {
       headers: { "Content-Type": "application/json" },
     });
   } catch (e) {
-    let errorMessage = "Unknown error";
-    if (e instanceof Error) {
-      errorMessage = e.message;
-    }
+    let errorMessage = e instanceof Error ? e.message : "Unknown error";
     return new Response(JSON.stringify({ error: errorMessage }), {
       status: 400,
     });

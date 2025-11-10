@@ -38,6 +38,8 @@ class AuthRepository {
       }
       final accessToken = googleAuthorization?.accessToken;
       final idToken = googleAuthentication.idToken;
+      DebugLogger().log('Google Access Token: $accessToken');
+      DebugLogger().log('Google ID Token: $idToken');
 
       if (accessToken == null) {
         throw 'No Access Token found.';
@@ -45,13 +47,14 @@ class AuthRepository {
       if (idToken == null) {
         throw 'No ID Token found.';
       }
-
+      DebugLogger().log('Signing in with Google to Supabase...');
       await _client.auth.signInWithIdToken(
         provider: OAuthProvider.google,
         idToken: idToken,
         accessToken: accessToken,
       );
     } catch (e) {
+      DebugLogger().error('Error during Google sign-in: $e');
       rethrow;
     }
   }

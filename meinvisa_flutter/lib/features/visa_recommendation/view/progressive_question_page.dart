@@ -232,6 +232,41 @@ class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage>
             });
           },
         );
+      case QuestionType.autocomplete:
+        return Autocomplete<String>(
+          initialValue: _currentAnswer is String ? TextEditingValue(text: _currentAnswer) : null,
+          optionsBuilder: (TextEditingValue textEditingValue) {
+            if (textEditingValue.text.isEmpty) {
+              return const Iterable<String>.empty();
+            }
+            // q.options contains the list of suggestions
+            return q.options.where(
+              (option) => option.toLowerCase().contains(textEditingValue.text.toLowerCase()),
+            );
+          },
+          onSelected: (String selection) {
+            setState(() {
+              _currentAnswer = selection;
+            });
+          },
+          fieldViewBuilder: (context, controller, focusNode, onEditingComplete) {
+            if (_currentAnswer is String && controller.text != _currentAnswer) {
+              controller.text = _currentAnswer;
+            }
+            return TextFormField(
+              controller: controller,
+              focusNode: focusNode,
+              decoration: InputDecoration(
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                filled: true,
+                fillColor: Colors.grey[50],
+                contentPadding: const EdgeInsets.all(16),
+                hintText: 'Type to search',
+              ),
+              onEditingComplete: onEditingComplete,
+            );
+          },
+        );
 
       case QuestionType.text:
       default:
