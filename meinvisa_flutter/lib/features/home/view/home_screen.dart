@@ -1,14 +1,15 @@
+// lib/features/home/view/home_screen.dart (updated section)
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:meinvisa/data/providers/user_provider.dart';
 import 'package:meinvisa/data/providers/visa_recommendation_storage_provider.dart';
+import 'package:meinvisa/data/providers/visa_recommendation_provider.dart';
 import 'package:meinvisa/features/home/widgets/quick_action_card.dart';
 import 'package:meinvisa/features/home/widgets/visa_card.dart';
 import 'package:meinvisa/features/visa_recommendation/view/result_screen.dart';
 import 'package:meinvisa/features/visa_recommendation/view/visa_recommendation_screen.dart';
 
-/// 🏠 Home Tab – Dashboard style
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
 
@@ -42,10 +43,74 @@ class HomePage extends ConsumerWidget {
 
       // Clear existing recommendation
       await ref.read(visaRecommendationStorageProvider.notifier).clearRecommendation();
+      
+      // Also clear any draft data
+      await ref.read(visaRecommendationProvider.notifier).clearDraft();
     }
 
     if (context.mounted) {
       context.push(VisaRecommendationScreen.routeName);
+    }
+  }
+
+  Future<void> _handleClearDraft(BuildContext context, WidgetRef ref) async {
+    final shouldClear = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Clear Draft?'),
+        content: const Text(
+          'This will delete all your saved progress. This action cannot be undone. Are you sure?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldClear != true) return;
+
+    // Show loading
+    if (context.mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    try {
+      // Clear the draft
+      await ref.read(visaRecommendationProvider.notifier).clearDraft();
+      
+      if (context.mounted) {
+        Navigator.of(context).pop(); // Close loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Draft cleared successfully'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.of(context).pop(); // Close loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Error: $e'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -154,6 +219,11 @@ class HomePage extends ConsumerWidget {
               icon: Icons.explore_outlined,
               label: 'New Visa Check',
               onTap: () => _handleNewVisaCheck(context, ref),
+            ),
+            QuickActionCard(
+              icon: Icons.delete_outline,
+              label: 'Clear Draft',
+              onTap: () => _handleClearDraft(context, ref),
             ),
             QuickActionCard(
               icon: Icons.assignment_outlined,

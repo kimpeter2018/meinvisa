@@ -1,3 +1,4 @@
+// lib/features/visa_recommendation/view/visa_recommendation_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -13,12 +14,10 @@ class VisaRecommendationScreen extends ConsumerStatefulWidget {
   const VisaRecommendationScreen({super.key});
 
   @override
-  ConsumerState<VisaRecommendationScreen> createState() =>
-      _VisaRecommendationScreenState();
+  ConsumerState<VisaRecommendationScreen> createState() => _VisaRecommendationScreenState();
 }
 
-class _VisaRecommendationScreenState
-    extends ConsumerState<VisaRecommendationScreen> {
+class _VisaRecommendationScreenState extends ConsumerState<VisaRecommendationScreen> {
   bool _isExiting = false;
 
   Future<bool> _handleWillPop() async {
@@ -53,8 +52,7 @@ class _VisaRecommendationScreenState
             showDialog(
               context: context,
               barrierDismissible: false,
-              builder: (context) =>
-                  const Center(child: CircularProgressIndicator()),
+              builder: (context) => const Center(child: CircularProgressIndicator()),
             );
           }
 
@@ -85,8 +83,8 @@ class _VisaRecommendationScreenState
           return true;
 
         case DraftAction.discard:
-          // Clear draft
-          notifier.clearDraft();
+          // Clear draft completely
+          await notifier.clearDraft();
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
@@ -102,10 +100,7 @@ class _VisaRecommendationScreenState
 
       if (mounted) {
         // Close loading dialog if open
-        Navigator.of(
-          context,
-          rootNavigator: true,
-        ).popUntil((route) => route.isFirst);
+        Navigator.of(context, rootNavigator: true).popUntil((route) => route.isFirst);
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -150,15 +145,12 @@ class _VisaRecommendationScreenState
                 showDialog(
                   context: context,
                   barrierDismissible: false,
-                  builder: (context) =>
-                      const Center(child: CircularProgressIndicator()),
+                  builder: (context) => const Center(child: CircularProgressIndicator()),
                 );
 
                 try {
                   // Sync to cloud before submitting
-                  await ref
-                      .read(visaRecommendationRepositoryProvider)
-                      .syncToSupabase();
+                  await ref.read(visaRecommendationRepositoryProvider).syncToSupabase();
 
                   final result = await notifier.handleSubmit();
 
@@ -172,10 +164,7 @@ class _VisaRecommendationScreenState
                     Navigator.of(context).pop();
 
                     // Navigate to result
-                    context.pushReplacement(
-                      VisaResultScreen.routeName,
-                      extra: result,
-                    );
+                    context.pushReplacement(VisaResultScreen.routeName, extra: result);
                   }
                 } catch (e) {
                   if (mounted) {
@@ -191,8 +180,7 @@ class _VisaRecommendationScreenState
               },
             );
           },
-          loading: () =>
-              const Scaffold(body: Center(child: CircularProgressIndicator())),
+          loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
           error: (e, _) => Scaffold(
             appBar: AppBar(title: const Text('Error')),
             body: Center(

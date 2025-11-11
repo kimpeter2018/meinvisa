@@ -429,10 +429,10 @@ class VisaRecommendationNotifier extends AutoDisposeAsyncNotifier<VisaQuestionna
   /// RESET
   /// ============================================
 
-  void clearDraft() {
+  Future<void> clearDraft() async {
     DebugLogger().log('🗑️ Clearing all data');
 
-    _repo.clearDraft();
+    await _repo.clearDraft();
     _answers.clear();
     _answeredFields.clear();
     _answeredQuestionsList.clear();

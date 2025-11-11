@@ -204,6 +204,7 @@ class VisaRecommendationRepository {
     }
   }
 
+  /// UPDATED: Now passes all answers as JSONB for complex logic
   Future<List<VisaQuestion>> getNextQuestions(
     String fieldKey,
     dynamic answer,
@@ -212,7 +213,16 @@ class VisaRecommendationRepository {
     try {
       DebugLogger().log('🔍 Fetching next questions for: $fieldKey = $answer');
 
-      // Convert answer to string for database query
+      // Convert current draft to JSONB for the function
+      final allAnswers = _draft?.toJson() ?? {};
+
+      // Add the current answer
+      if (answer is Map<String, dynamic>) {
+        allAnswers.addAll(answer);
+      } else {
+        allAnswers[fieldKey] = answer;
+      }
+
       String answerStr = _convertAnswerToString(answer);
 
       final response = await _supabase.rpc(
@@ -221,6 +231,7 @@ class VisaRecommendationRepository {
           'p_field_key': fieldKey,
           'p_answer': answerStr,
           'p_answered_fields': answeredFields,
+          'p_all_answers': allAnswers, // NEW: Pass all answers for complex logic
         },
       );
 
@@ -235,7 +246,6 @@ class VisaRecommendationRepository {
 
       DebugLogger().log('📥 Retrieved ${questions.length} questions from SQL');
 
-      // Hydrate options for autocomplete/select questions
       return await _hydrateQuestions(questions);
     } catch (e, st) {
       DebugLogger().error('❌ Failed to fetch next questions', e, st);
