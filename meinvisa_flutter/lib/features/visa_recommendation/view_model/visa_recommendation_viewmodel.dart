@@ -32,15 +32,18 @@ class VisaRecommendationNotifier extends AutoDisposeAsyncNotifier<VisaQuestionna
 
     _logQueueState('INITIALIZATION START', level: LogLevel.info);
 
-    // Load draft from repository (DB or memory)
-    await _repo.loadDraft();
-    final draft = _repo.getDraft();
-
     try {
-      // Fetch initial questions (universal category)
+      // Fetch initial questions FIRST (before loading draft)
       final initialQuestions = await _repo.getInitialQuestions();
+      DebugLogger().log('📥 Fetched ${initialQuestions.length} initial questions');
 
-      DebugLogger().log('📥 Loaded ${initialQuestions.length} initial questions');
+      // NOW load draft from repository (memory or SharedPreferences)
+      await _repo.loadDraft();
+      final draft = _repo.getDraft();
+
+      DebugLogger().log(
+        '📥 Loaded draft: ${draft != null ? "${draft.toJson().length} answers" : "NONE"}',
+      );
 
       if (draft != null && draft.toJson().isNotEmpty) {
         // Case: User has previous progress - restore state

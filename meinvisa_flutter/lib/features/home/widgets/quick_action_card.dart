@@ -5,12 +5,7 @@ class QuickActionCard extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
 
-  const QuickActionCard({
-    super.key,
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
+  const QuickActionCard({super.key, required this.icon, required this.label, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +15,7 @@ class QuickActionCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         child: Container(
-          width: 108,
+          width: MediaQuery.of(context).size.width * 0.4,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
@@ -40,26 +35,16 @@ class QuickActionCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.primary.withValues(alpha: 0.1),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  icon,
-                  size: 28,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
+                child: Icon(icon, size: 28, color: Theme.of(context).colorScheme.primary),
               ),
               const SizedBox(height: 12),
               Text(
                 label,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  height: 1.3,
-                ),
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, height: 1.3),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),

@@ -5,15 +5,13 @@ import 'package:meinvisa/data/models/visa_questionnaire_model/visa_questionnaire
 import 'package:meinvisa/features/visa_recommendation/view_model/visa_recommendation_viewmodel.dart';
 
 /// ✅ Single repository provider
-final visaRecommendationRepositoryProvider =
-    Provider<VisaRecommendationRepository>((ref) {
-      final userRepo = ref.read(userRepositoryProvider);
-      return VisaRecommendationRepository(userRepo);
-    });
+final visaRecommendationRepositoryProvider = Provider<VisaRecommendationRepository>((ref) {
+  final userRepo = ref.read(userRepositoryProvider);
+  return VisaRecommendationRepository(userRepo);
+});
 
 /// ✅ Main async notifier for questionnaire + result
 final visaRecommendationProvider =
-    AutoDisposeAsyncNotifierProvider<
-      VisaRecommendationNotifier,
-      VisaQuestionnaire?
-    >(VisaRecommendationNotifier.new);
+    AutoDisposeAsyncNotifierProvider<VisaRecommendationNotifier, VisaQuestionnaire?>(
+      VisaRecommendationNotifier.new,
+    );

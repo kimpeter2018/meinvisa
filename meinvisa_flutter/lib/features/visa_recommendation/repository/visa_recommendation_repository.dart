@@ -31,153 +31,64 @@ class VisaRecommendationRepository {
 
   VisaQuestionnaire? getDraft() => _draft;
 
-  /// Save draft: Always to SharedPreferences, mark as pending for Supabase
-  Future<void> saveDraft(VisaQuestionnaire data, {bool syncToSupabase = false}) async {
+  /// Save draft to SharedPreferences only
+  Future<void> saveDraft(VisaQuestionnaire data) async {
     _draft = data;
 
-    // Always save to SharedPreferences (fast, local)
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_draftKey, jsonEncode(data.toJson()));
-
-      if (!syncToSupabase) {
-        // Mark as having pending changes
-        await prefs.setBool(_hasPendingSyncKey, true);
-        // Update local timestamp to track when draft was last saved
-        await prefs.setInt(_lastSyncKey, DateTime.now().millisecondsSinceEpoch);
-      }
-
+      await prefs.setInt(_lastSyncKey, DateTime.now().millisecondsSinceEpoch);
       DebugLogger().log('💾 Draft saved to SharedPreferences');
     } catch (e) {
       DebugLogger().error('❌ Failed to save draft to SharedPreferences', e);
-    }
-
-    // Only sync to Supabase if explicitly requested
-    if (syncToSupabase) {
-      await _syncToSupabase(data);
+      rethrow;
     }
   }
 
-  /// Check if there are pending changes not synced to Supabase
+  /// Check if there are any saved changes
   Future<bool> hasPendingChanges() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_hasPendingSyncKey) ?? false;
+    final localData = prefs.getString(_draftKey);
+    return localData != null && localData.isNotEmpty;
   }
 
-  /// Sync to Supabase (called explicitly by user or on completion)
-  Future<void> syncToSupabase() async {
-    if (_draft == null) {
-      DebugLogger().log('⚠️ No draft to sync');
-      return;
-    }
-
-    await _syncToSupabase(_draft!);
-  }
-
-  /// Internal sync method
-  Future<void> _syncToSupabase(VisaQuestionnaire data) async {
-    final userId = _supabase.auth.currentUser?.id;
-    if (userId == null) {
-      DebugLogger().error('⚠️ No authenticated user, cannot sync to Supabase');
-      return;
-    }
-
-    try {
-      await _supabase.from('user_visa_responses').upsert({
-        'user_id': userId,
-        'responses': data.toJson(),
-        'updated_at': DateTime.now().toIso8601String(),
-      }, onConflict: 'user_id');
-
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt(_lastSyncKey, DateTime.now().millisecondsSinceEpoch);
-      await prefs.setBool(_hasPendingSyncKey, false);
-
-      DebugLogger().log('☁️ Draft synced to Supabase');
-    } catch (e) {
-      DebugLogger().error('⚠️ Failed to sync draft to Supabase', e);
-      rethrow; // Rethrow so caller knows sync failed
-    }
-  }
-
-  /// Load draft: Try SharedPreferences first, fallback to Supabase
+  /// Load draft from SharedPreferences
   Future<void> loadDraft() async {
-    // Try SharedPreferences first (fast)
     try {
       final prefs = await SharedPreferences.getInstance();
       final localData = prefs.getString(_draftKey);
 
-      if (localData != null) {
+      if (localData != null && localData.isNotEmpty) {
         _draft = VisaQuestionnaire.fromJson(Map<String, dynamic>.from(jsonDecode(localData)));
         DebugLogger().log('📂 Draft loaded from SharedPreferences');
-
-        // Check if we need to sync from Supabase (if local is old)
-        final lastSync = prefs.getInt(_lastSyncKey) ?? 0;
-        final lastSyncDate = DateTime.fromMillisecondsSinceEpoch(lastSync);
-        final now = DateTime.now();
-        final hoursSinceSync = now.difference(lastSyncDate).inHours;
-
-        if (hoursSinceSync > 24) {
-          DebugLogger().log('🔄 Local draft is $hoursSinceSync old, checking Supabase...');
-          await _loadFromSupabase();
-        }
-
-        return;
+      } else {
+        _draft = null;
+        DebugLogger().log('📂 No draft found in SharedPreferences');
       }
     } catch (e) {
       DebugLogger().error('⚠️ Error loading from SharedPreferences', e);
-    }
-
-    // Fallback to Supabase
-    await _loadFromSupabase();
-  }
-
-  Future<void> _loadFromSupabase() async {
-    final userId = _supabase.auth.currentUser?.id;
-    if (userId == null) return;
-
-    try {
-      final response = await _supabase
-          .from('user_visa_responses')
-          .select('responses')
-          .eq('user_id', userId)
-          .maybeSingle();
-
-      if (response != null && response['responses'] != null) {
-        _draft = VisaQuestionnaire.fromJson(Map<String, dynamic>.from(response['responses']));
-
-        // Save to SharedPreferences for next time
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString(_draftKey, jsonEncode(_draft!.toJson()));
-        await prefs.setBool(_hasPendingSyncKey, false);
-
-        DebugLogger().log('☁️ Draft loaded from Supabase');
-      }
-    } catch (e) {
-      DebugLogger().error('⚠️ Error loading from Supabase', e);
+      _draft = null;
     }
   }
 
-  /// Clear draft from both storages
+  /// Clear draft from SharedPreferences
   Future<void> clearDraft() async {
+    DebugLogger().log('🗑️ Clearing draft...');
+
+    // Clear in-memory draft first
     _draft = null;
 
     // Clear SharedPreferences
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_draftKey);
-    await prefs.remove(_lastSyncKey);
-    await prefs.remove(_hasPendingSyncKey);
-    DebugLogger().log('🗑️ Draft cleared from SharedPreferences');
-
-    // Clear Supabase
-    final userId = _supabase.auth.currentUser?.id;
-    if (userId != null) {
-      try {
-        await _supabase.from('user_visa_responses').delete().eq('user_id', userId);
-        DebugLogger().log('🗑️ Draft cleared from Supabase');
-      } catch (e) {
-        DebugLogger().error('⚠️ Error clearing Supabase', e);
-      }
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_draftKey);
+      await prefs.remove(_lastSyncKey);
+      await prefs.remove(_hasPendingSyncKey);
+      DebugLogger().log('✅ Draft cleared from SharedPreferences');
+    } catch (e) {
+      DebugLogger().error('❌ Error clearing SharedPreferences', e);
+      rethrow;
     }
   }
 

@@ -282,30 +282,3 @@ export interface VisaQuestion {
   skipIfAnswered: boolean;
   autoSkipConditions?: Record<string, any>;
 }
-
-/**
- * Database question path structure (for reference)
- */
-export interface VisaQuestionPath {
-  id: string;
-  fromField: string;
-  answerValue?: string;
-  conditionType?:
-    | "equals"
-    | "not_equals"
-    | "contains"
-    | "greater_than_or_equal"
-    | "less_than_or_equal"
-    | "greater_than"
-    | "less_than"
-    | "exists"
-    | "age_under"
-    | "age_over";
-  conditionValue?: string;
-  nextCategories?: string[];
-  nextQuestionKeys?: string[];
-  skipCategories?: string[];
-  skipQuestionKeys?: string[];
-  priority: number;
-  description: string;
-}

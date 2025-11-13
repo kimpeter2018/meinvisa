@@ -288,9 +288,16 @@ class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage>
   String _formatAnswer(dynamic answer) {
     if (answer == null) return 'Not answered';
     if (answer is bool) return answer ? 'Yes' : 'No';
+    // Handle stringified DateTimes (like "1999-08-08T00:00:00.000")
+    if (answer is String && DateTime.tryParse(answer) != null) {
+      final parsed = DateTime.parse(answer);
+      return '${parsed.day}/${parsed.month}/${parsed.year}';
+    }
+
     if (answer is DateTime) {
       return '${answer.day}/${answer.month}/${answer.year}';
     }
+
     return answer.toString();
   }
 

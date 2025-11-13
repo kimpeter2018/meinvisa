@@ -6,7 +6,6 @@ import 'package:meinvisa/data/providers/visa_recommendation_provider.dart';
 import 'package:meinvisa/data/providers/visa_recommendation_storage_provider.dart';
 import 'package:meinvisa/features/visa_recommendation/view/progressive_question_page.dart';
 import 'package:meinvisa/features/visa_recommendation/view/result_screen.dart';
-import 'package:meinvisa/features/visa_recommendation/widgets/draft_save_dialog.dart';
 
 class VisaRecommendationScreen extends ConsumerStatefulWidget {
   static const routeName = '/visa-recommendation';
@@ -18,11 +17,7 @@ class VisaRecommendationScreen extends ConsumerStatefulWidget {
 }
 
 class _VisaRecommendationScreenState extends ConsumerState<VisaRecommendationScreen> {
-  bool _isExiting = false;
-
-  Future<bool> _handleWillPop() async {
-    if (_isExiting) return true;
-
+  Future<bool> _handleExit() async {
     final notifier = ref.read(visaRecommendationProvider.notifier);
     final repo = ref.read(visaRecommendationRepositoryProvider);
 
@@ -33,85 +28,82 @@ class _VisaRecommendationScreenState extends ConsumerState<VisaRecommendationScr
       return true; // No pending changes, allow exit
     }
 
-    // Show dialog
+    // Show save dialog
     if (!mounted) return false;
 
-    final action = await DraftSaveDialog.show(context);
+    final shouldSave = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.save_outlined, color: Theme.of(context).primaryColor),
+            const SizedBox(width: 12),
+            const Text('Save Your Progress?'),
+          ],
+        ),
+        content: const Text(
+          'You have unsaved changes. Would you like to save your progress?',
+          style: TextStyle(fontSize: 15),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(null), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Discard'),
+          ),
+          FilledButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Save')),
+        ],
+      ),
+    );
 
-    if (action == null) {
-      return false; // User cancelled
+    if (shouldSave == null) {
+      return false; // User cancelled - stay on page
     }
 
-    setState(() => _isExiting = true);
-
-    try {
-      switch (action) {
-        case DraftAction.saveToCloud:
-          // Show loading
+    if (shouldSave) {
+      // Save progress
+      try {
+        final draft = repo.getDraft();
+        if (draft != null) {
+          await repo.saveDraft(draft);
           if (mounted) {
-            showDialog(
-              context: context,
-              barrierDismissible: false,
-              builder: (context) => const Center(child: CircularProgressIndicator()),
-            );
-          }
-
-          // Sync to Supabase
-          await repo.syncToSupabase();
-
-          if (mounted) {
-            Navigator.of(context).pop(); // Close loading dialog
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('✅ Progress saved to cloud'),
+                content: Text('✅ Progress saved'),
                 behavior: SnackBarBehavior.floating,
               ),
             );
           }
-          return true;
-
-        case DraftAction.saveLocal:
-          // Already saved locally, just exit
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('✅ Progress saved locally'),
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-          }
-          return true;
-
-        case DraftAction.discard:
-          // Clear draft completely
-          await notifier.clearDraft();
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('🗑️ Progress discarded'),
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-          }
-          return true;
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('❌ Error saving: $e'),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return false;
       }
-    } catch (e) {
-      setState(() => _isExiting = false);
-
+    } else {
+      // Discard progress
+      await notifier.clearDraft();
       if (mounted) {
-        // Close loading dialog if open
-        Navigator.of(context, rootNavigator: true).popUntil((route) => route.isFirst);
-
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Error: $e'),
+          const SnackBar(
+            content: Text('🗑️ Progress discarded'),
             behavior: SnackBarBehavior.floating,
-            backgroundColor: Colors.red,
           ),
         );
       }
-      return false;
     }
+
+    return true;
   }
 
   @override
@@ -119,8 +111,16 @@ class _VisaRecommendationScreenState extends ConsumerState<VisaRecommendationScr
     final notifier = ref.read(visaRecommendationProvider.notifier);
     final state = ref.watch(visaRecommendationProvider);
 
-    return WillPopScope(
-      onWillPop: _handleWillPop,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+
+        final shouldPop = await _handleExit();
+        if (shouldPop && mounted) {
+          Navigator.of(context).pop();
+        }
+      },
       child: Scaffold(
         body: state.when(
           data: (_) {
@@ -149,9 +149,6 @@ class _VisaRecommendationScreenState extends ConsumerState<VisaRecommendationScr
                 );
 
                 try {
-                  // Sync to cloud before submitting
-                  await ref.read(visaRecommendationRepositoryProvider).syncToSupabase();
-
                   final result = await notifier.handleSubmit();
 
                   // Store the result
