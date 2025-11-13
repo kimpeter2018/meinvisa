@@ -390,9 +390,7 @@ class VisaRecommendationRepository {
     final response = await _supabase.functions.invoke(
       'visa-recommendation',
       body: data.toJson(),
-      headers: {
-        'Authorization': 'Bearer $userToken', // user's JWT
-      },
+      headers: {'Authorization': 'Bearer $userToken'},
     );
 
     if (response.status >= 400) {

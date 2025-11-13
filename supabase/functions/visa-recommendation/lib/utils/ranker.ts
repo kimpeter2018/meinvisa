@@ -235,7 +235,7 @@ function evaluateCriterion(
     key.match(/_level_[a-c][1-2]/i)
   ) {
     const match = key.match(/_(a1|a2|b1|b2|c1|c2)\+?$/i);
-    const required = match ? match[1].toUpperCase() : undefined;
+    const required = match && match[1] ? match[1].toUpperCase() : undefined;
 
     let haveLevel: string | undefined;
     if (key.includes("german")) {
@@ -689,7 +689,7 @@ export function evaluateAllVisas(
 export function chooseTopCandidate(
   candidates: VisaCandidate[],
 ): VisaCandidate | null {
-  return candidates.length > 0 ? candidates[0] : null;
+  return candidates.length > 0 ? candidates[0]! : null;
 }
 
 /**
