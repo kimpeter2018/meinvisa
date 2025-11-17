@@ -282,3 +282,67 @@ export interface VisaQuestion {
   skipIfAnswered: boolean;
   autoSkipConditions?: Record<string, any>;
 }
+
+export interface EnhancedVisaRecommendation extends VisaRecommendation {
+  applicationMetadata?: ApplicationMetadata;
+}
+
+export interface ApplicationMetadata {
+  cityPortals: CityPortal[];
+  requiredDocuments: RequiredDocument[];
+  additionalQuestions: ApplicationQuestion[];
+  preFilledFields: PreFilledField[];
+  estimatedProcessingTime: string;
+  appointmentBookingUrl?: string;
+  specialInstructions: string[];
+}
+
+export interface CityPortal {
+  id: string;
+  city: string;
+  state?: string;
+  portalUrl: string;
+  appointmentRequired: boolean;
+  appointmentBookingUrl?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  address?: string;
+  operatingHours?: string;
+  specialInstructions?: string;
+  averageWaitTimeDays?: number;
+}
+
+export interface RequiredDocument {
+  id: string;
+  documentType: string;
+  documentName: string;
+  description?: string;
+  required: boolean;
+  canGenerate: boolean;
+  instructions?: string;
+  orderIndex: number;
+}
+
+export interface ApplicationQuestion {
+  id: string;
+  fieldKey: string;
+  question: string;
+  questionType: string;
+  required: boolean;
+  options?: string[];
+  validationRules?: Record<string, any>;
+  helpText?: string;
+  placeholder?: string;
+  section: string;
+  orderIndex: number;
+}
+
+export interface PreFilledField {
+  formFieldKey: string;
+  formFieldLabel: string;
+  formSection?: string;
+  sourceFieldKey: string;
+  value: any;
+  confidence: "high" | "medium" | "low";
+  requiresVerification: boolean;
+}

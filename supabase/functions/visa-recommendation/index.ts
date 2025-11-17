@@ -5,32 +5,94 @@
 // Setup type definitions for built-in Supabase Runtime APIs
 import {} from "https://deno.land/std/http/server.ts";
 import { evaluateVisa } from "./lib/evaluateVisa.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { getApplicationMetadata } from "./lib/utils/applicationMetadata.ts";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+};
 
 Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
+
   try {
-    // Extract the JWT from the header
+    // Extract JWT from Authorization header
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Missing or invalid JWT" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "Missing or invalid JWT" }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
+
     const token = authHeader.split(" ")[1];
 
-    // You can verify the token if needed using Supabase JWT secret
-    // Or simply trust Supabase RLS to enforce permissions
-    const body = await req.json();
-    const result = evaluateVisa(body);
+    // Create Supabase client
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    return new Response(JSON.stringify(result, null, 2), {
-      headers: { "Content-Type": "application/json" },
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      global: {
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    });
+
+    // Verify user is authenticated
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser(token);
+
+    if (userError || !user) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    // Parse request body
+    const body = await req.json();
+
+    // Get visa recommendation
+    const recommendation = evaluateVisa(body);
+
+    // Get application metadata (NEW)
+    const metadata = await getApplicationMetadata(
+      recommendation.recommended!.code,
+      body,
+      supabase,
+    );
+
+    // Combine recommendation with metadata
+    const enhancedResponse = {
+      ...recommendation,
+      applicationMetadata: metadata,
+    };
+
+    return new Response(JSON.stringify(enhancedResponse, null, 2), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    let errorMessage = e instanceof Error ? e.message : "Unknown error";
-    return new Response(JSON.stringify({ error: errorMessage }), {
-      status: 400,
-    });
+    console.error("Error:", e);
+    const errorMessage = e instanceof Error ? e.message : "Unknown error";
+    return new Response(
+      JSON.stringify({ error: errorMessage }),
+      {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   }
 });
 
