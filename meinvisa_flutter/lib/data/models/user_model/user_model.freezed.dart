@@ -15,10 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$UserModel {
 
- String get id; String get email; String? get name; String? get avatarUrl;// String? nationality,
-// String? occupation,
-// String? purposeOfStay,
- DateTime? get createdAt;
+ String get id; String get email; String? get name; String? get avatarUrl; DateTime? get createdAt;
 /// Create a copy of UserModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -223,9 +220,6 @@ class _UserModel implements UserModel {
 @override final  String email;
 @override final  String? name;
 @override final  String? avatarUrl;
-// String? nationality,
-// String? occupation,
-// String? purposeOfStay,
 @override final  DateTime? createdAt;
 
 /// Create a copy of UserModel

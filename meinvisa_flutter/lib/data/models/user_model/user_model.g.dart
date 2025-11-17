@@ -6,14 +6,23 @@ part of 'user_model.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_UserModel _$UserModelFromJson(Map<String, dynamic> json) => _UserModel(
-  id: json['id'] as String,
-  email: json['email'] as String,
-  name: json['name'] as String?,
-  avatarUrl: json['avatar_url'] as String?,
-  createdAt: json['created_at'] == null
-      ? null
-      : DateTime.parse(json['created_at'] as String),
+_UserModel _$UserModelFromJson(Map json) => $checkedCreate(
+  '_UserModel',
+  json,
+  ($checkedConvert) {
+    final val = _UserModel(
+      id: $checkedConvert('id', (v) => v as String),
+      email: $checkedConvert('email', (v) => v as String),
+      name: $checkedConvert('name', (v) => v as String?),
+      avatarUrl: $checkedConvert('avatar_url', (v) => v as String?),
+      createdAt: $checkedConvert(
+        'created_at',
+        (v) => v == null ? null : DateTime.parse(v as String),
+      ),
+    );
+    return val;
+  },
+  fieldKeyMap: const {'avatarUrl': 'avatar_url', 'createdAt': 'created_at'},
 );
 
 Map<String, dynamic> _$UserModelToJson(_UserModel instance) =>
