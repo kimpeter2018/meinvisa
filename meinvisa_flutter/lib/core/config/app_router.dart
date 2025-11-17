@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:meinvisa/core/debug/debug_overlay.dart';
-import 'package:meinvisa/data/models/visa_eligibility_result_model/visa_eligibility_result_model.dart';
+import 'package:meinvisa/data/models/visa_recommendation_response_model/visa_recommendation_response_model.dart';
 import 'package:meinvisa/features/app/auth_gate.dart';
 import 'package:meinvisa/features/auth/view/email_confirmation_screen.dart';
 import 'package:meinvisa/features/auth/view/login_screen.dart';
@@ -19,17 +19,7 @@ final router = GoRouter(
   initialLocation: '/',
   navigatorKey: rootNavigatorKey,
   routes: [
-    GoRoute(
-      path: '/',
-      builder: (context, state) {
-        final session = Supabase.instance.client.auth.currentSession;
-        if (session != null) {
-          // Session exists, now delegate to AuthGate
-          return const AuthGate();
-        }
-        return const LoginScreen();
-      },
-    ),
+    GoRoute(path: '/', builder: (context, state) => const AuthGate()),
     GoRoute(
       path: HomeLayout.routeName,
       name: 'home',
@@ -63,7 +53,7 @@ final router = GoRouter(
     GoRoute(
       path: VisaResultScreen.routeName,
       builder: (context, state) {
-        final result = state.extra! as VisaEligibilityResult;
+        final result = state.extra! as VisaRecommendationResponse;
         return VisaResultScreen(result: result);
       },
     ),
@@ -98,7 +88,7 @@ final router = GoRouter(
 
             final session = snapshot.data;
             if (session != null) {
-              return const OnboardingScreen(); // success — user confirmed
+              return const AuthGate(); // success — user confirmed
             } else {
               return const LoginScreen(); // failed — retry login
             }

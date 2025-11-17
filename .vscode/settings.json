@@ -1,11 +1,26 @@
 {
+  "[dart]": {
+    "editor.codeActionsOnSave": {
+      "source.fixAll": "explicit"
+    },
+    "editor.defaultFormatter": "Dart-Code.dart-code",
+    "editor.formatOnSave": true
+  },
   "[typescript]": {
     "editor.defaultFormatter": "denoland.vscode-deno"
   },
+  "dart.analysisExcludedFolders": [
+    "supabase"
+  ],
+  "dart.enableSdkFormatter": true,
+  "dart.lineLength": 100,
+  "dart.showTodos": true,
+  "deno.enable": true,
   "deno.enablePaths": [
     "supabase/functions"
   ],
   "deno.lint": true,
+  "deno.suggest.imports.autoDiscover": true,
   "deno.unstable": [
     "bare-node-builtins",
     "byonm",

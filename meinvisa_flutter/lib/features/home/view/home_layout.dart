@@ -5,7 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:meinvisa/data/providers/auth_provider.dart';
 import 'package:meinvisa/data/providers/user_provider.dart';
 import 'package:meinvisa/features/auth/view/login_screen.dart';
-import 'package:meinvisa/features/visa_recommendation/view/visa_recommendation_screen.dart';
+import 'package:meinvisa/features/home/view/home_screen.dart';
+import 'package:meinvisa/features/settings/view/settings_screen.dart';
 
 class HomeLayout extends ConsumerStatefulWidget {
   const HomeLayout({super.key});
@@ -19,22 +20,21 @@ class _HomeLayoutState extends ConsumerState<HomeLayout> {
   int _selectedIndex = 0;
 
   static List<Widget> _pages(BuildContext context) => <Widget>[
-    Center(
-      child: ElevatedButton(
-        onPressed: () {
-          context.go(VisaRecommendationScreen.routeName);
-        },
-        child: const Text('Go to Visa Recommendation'),
-      ),
-    ),
-    const Center(child: Text('Search')),
-    const Center(child: Text('Profile')),
+    const HomePage(),
+    const _ApplicationsTab(),
+    const _AssistantTab(),
+    const SettingsPage(),
+  ];
+
+  static const List<String> _titles = [
+    'MeinVisa',
+    'Applications',
+    'AI Assistant',
+    'Settings',
   ];
 
   void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+    setState(() => _selectedIndex = index);
   }
 
   Future<void> signOut() async {
@@ -57,38 +57,79 @@ class _HomeLayoutState extends ConsumerState<HomeLayout> {
       data: (user) {
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Home Layout'),
-            centerTitle: true,
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.logout),
-                onPressed: () async {
-                  signOut();
-                },
-                tooltip: "Sign Out",
-              ),
-            ],
+            title: Text(_titles[_selectedIndex]),
+            centerTitle: false,
+            elevation: 0,
+            backgroundColor: Colors.transparent,
           ),
-          body: _pages(context)[_selectedIndex], // <-- updated here
-          bottomNavigationBar: BottomNavigationBar(
-            currentIndex: _selectedIndex,
-            onTap: _onItemTapped,
-            items: const [
-              BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.search),
-                label: 'Search',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.person),
-                label: 'Profile',
-              ),
-            ],
+          body: _pages(context)[_selectedIndex],
+          bottomNavigationBar: Container(
+            decoration: BoxDecoration(
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, -5),
+                ),
+              ],
+            ),
+            child: BottomNavigationBar(
+              currentIndex: _selectedIndex,
+              onTap: _onItemTapped,
+              type: BottomNavigationBarType.fixed,
+              elevation: 0,
+              selectedItemColor: Theme.of(context).colorScheme.primary,
+              unselectedItemColor: Colors.grey,
+              selectedFontSize: 12,
+              unselectedFontSize: 12,
+              items: const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.home_rounded),
+                  label: 'Home',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.assignment_rounded),
+                  label: 'Applications',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.smart_toy_rounded),
+                  label: 'AI',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.settings_rounded),
+                  label: 'Settings',
+                ),
+              ],
+            ),
           ),
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (_, __) => Center(child: Text('Failed to load user data')),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (_, __) =>
+          const Scaffold(body: Center(child: Text('Failed to load user data'))),
     );
+  }
+}
+
+/// 📄 Applications Tab
+class _ApplicationsTab extends StatelessWidget {
+  const _ApplicationsTab();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text('Your ongoing and past visa applications will appear here.'),
+    );
+  }
+}
+
+/// 🤖 AI Assistant Tab
+class _AssistantTab extends StatelessWidget {
+  const _AssistantTab();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(child: Text('Chat with your Visa Assistant 🤖'));
   }
 }

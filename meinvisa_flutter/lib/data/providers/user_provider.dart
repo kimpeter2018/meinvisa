@@ -1,14 +1,12 @@
 import 'dart:async';
-
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:meinvisa/data/models/user_model/user_model.dart';
 import 'package:meinvisa/data/providers/auth_provider.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:meinvisa/core/debug/debug_logger.dart';
 
-/// StreamProvider to always reflect the latest app user
 final userProvider = StreamProvider<UserModel?>((ref) {
   final client = ref.read(supabaseProvider);
 
-  // Emit initial user right away
   final controller = StreamController<UserModel?>();
 
   Future<void> emitCurrentUser() async {
@@ -17,27 +15,35 @@ final userProvider = StreamProvider<UserModel?>((ref) {
       controller.add(null);
       return;
     }
-    print("UserProvider: Current session user ID: ${session.user.id}");
-    // fetch user data from your `users` table
-    final response = await client
-        .from('users')
-        .select()
-        .eq('id', session.user.id)
-        .maybeSingle();
 
-    if (response == null) {
-      print("UserProvider: No user data found in 'users' table.");
-      controller.add(null); // not onboarded yet
-    } else {
-      controller.add(UserModel.fromJson(response));
+    DebugLogger().log(
+      "UserProvider: Fetching user from 'users' table for ${session.user.id}",
+    );
+    try {
+      final response = await client
+          .from('users')
+          .select()
+          .eq('id', session.user.id)
+          .maybeSingle();
+      DebugLogger().log("UserProvider: users response = $response");
+      if (response == null) {
+        controller.add(null);
+      } else {
+        controller.add(UserModel.fromJson(response));
+      }
+    } catch (e, st) {
+      DebugLogger().log("UserProvider: ERROR fetching user: $e\n$st");
+      controller.add(null);
     }
   }
 
+  // Emit immediately if session exists
   emitCurrentUser();
 
-  // Listen to auth state changes
-  final authSub = client.auth.onAuthStateChange.listen((event) {
-    emitCurrentUser();
+  // Listen to auth changes
+  final authSub = client.auth.onAuthStateChange.listen((event) async {
+    DebugLogger().log("UserProvider: Auth event = ${event.event.name}");
+    await emitCurrentUser();
   });
 
   ref.onDispose(() {

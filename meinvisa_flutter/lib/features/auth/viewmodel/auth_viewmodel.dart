@@ -61,7 +61,7 @@ class AuthViewModel extends StateNotifier<AsyncValue<Session?>> {
       await _authRepository.signUpWithEmail(email, password);
       // Don't set loading here — UI can show partial spinner.
       state = AsyncValue.data(_authRepository.currentSession);
-    } catch (e, st) {
+    } catch (e) {
       // Keep state null to avoid blocking UI
       state = AsyncValue.data(null);
       throw Exception('Sign-up failed: $e');
@@ -78,7 +78,7 @@ class AuthViewModel extends StateNotifier<AsyncValue<Session?>> {
       state = AsyncValue.data(_authRepository.currentSession);
 
       return user?.emailConfirmedAt != null;
-    } catch (e, st) {
+    } catch (e) {
       state = AsyncValue.data(null);
       final message = e is Exception ? e.toString() : '$e';
       if (message.contains('Email not confirmed')) {
@@ -103,7 +103,7 @@ class AuthViewModel extends StateNotifier<AsyncValue<Session?>> {
       createdAt: DateTime.now(),
     );
 
-    if (userSession != null && !(await _userRepository.exists(user.id))) {
+    if (!(await _userRepository.exists(user.id))) {
       await _userRepository.createUser(user);
     }
   }

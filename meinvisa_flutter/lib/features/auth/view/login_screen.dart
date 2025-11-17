@@ -1,6 +1,4 @@
 import 'package:meinvisa/core/utils/validators.dart';
-import 'package:meinvisa/data/providers/user_provider.dart';
-import 'package:meinvisa/data/repositories/user_repository.dart';
 import 'package:meinvisa/features/auth/view/email_confirmation_screen.dart';
 import 'package:meinvisa/features/auth/view/signup_screen.dart';
 import 'package:flutter/material.dart';

@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$VisaQuestion {
 
- String get id; String get questionText;@QuestionTypeConverter() QuestionType get questionType; String get category; String? get optionsSource; List<String> get options;
+ String get uid; String get category; String get question; String get fieldKey;@QuestionTypeConverter() QuestionType get questionType; String? get purpose; String? get optionsSource; List<String> get options; bool get required; int? get orderIndex;
 /// Create a copy of VisaQuestion
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $VisaQuestionCopyWith<VisaQuestion> get copyWith => _$VisaQuestionCopyWithImpl<V
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is VisaQuestion&&(identical(other.id, id) || other.id == id)&&(identical(other.questionText, questionText) || other.questionText == questionText)&&(identical(other.questionType, questionType) || other.questionType == questionType)&&(identical(other.category, category) || other.category == category)&&(identical(other.optionsSource, optionsSource) || other.optionsSource == optionsSource)&&const DeepCollectionEquality().equals(other.options, options));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is VisaQuestion&&(identical(other.uid, uid) || other.uid == uid)&&(identical(other.category, category) || other.category == category)&&(identical(other.question, question) || other.question == question)&&(identical(other.fieldKey, fieldKey) || other.fieldKey == fieldKey)&&(identical(other.questionType, questionType) || other.questionType == questionType)&&(identical(other.purpose, purpose) || other.purpose == purpose)&&(identical(other.optionsSource, optionsSource) || other.optionsSource == optionsSource)&&const DeepCollectionEquality().equals(other.options, options)&&(identical(other.required, required) || other.required == required)&&(identical(other.orderIndex, orderIndex) || other.orderIndex == orderIndex));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,questionText,questionType,category,optionsSource,const DeepCollectionEquality().hash(options));
+int get hashCode => Object.hash(runtimeType,uid,category,question,fieldKey,questionType,purpose,optionsSource,const DeepCollectionEquality().hash(options),required,orderIndex);
 
 @override
 String toString() {
-  return 'VisaQuestion(id: $id, questionText: $questionText, questionType: $questionType, category: $category, optionsSource: $optionsSource, options: $options)';
+  return 'VisaQuestion(uid: $uid, category: $category, question: $question, fieldKey: $fieldKey, questionType: $questionType, purpose: $purpose, optionsSource: $optionsSource, options: $options, required: $required, orderIndex: $orderIndex)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $VisaQuestionCopyWith<$Res>  {
   factory $VisaQuestionCopyWith(VisaQuestion value, $Res Function(VisaQuestion) _then) = _$VisaQuestionCopyWithImpl;
 @useResult
 $Res call({
- String id, String questionText,@QuestionTypeConverter() QuestionType questionType, String category, String? optionsSource, List<String> options
+ String uid, String category, String question, String fieldKey,@QuestionTypeConverter() QuestionType questionType, String? purpose, String? optionsSource, List<String> options, bool required, int? orderIndex
 });
 
 
@@ -65,15 +65,19 @@ class _$VisaQuestionCopyWithImpl<$Res>
 
 /// Create a copy of VisaQuestion
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? questionText = null,Object? questionType = null,Object? category = null,Object? optionsSource = freezed,Object? options = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? uid = null,Object? category = null,Object? question = null,Object? fieldKey = null,Object? questionType = null,Object? purpose = freezed,Object? optionsSource = freezed,Object? options = null,Object? required = null,Object? orderIndex = freezed,}) {
   return _then(_self.copyWith(
-id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as String,questionText: null == questionText ? _self.questionText : questionText // ignore: cast_nullable_to_non_nullable
+uid: null == uid ? _self.uid : uid // ignore: cast_nullable_to_non_nullable
+as String,category: null == category ? _self.category : category // ignore: cast_nullable_to_non_nullable
+as String,question: null == question ? _self.question : question // ignore: cast_nullable_to_non_nullable
+as String,fieldKey: null == fieldKey ? _self.fieldKey : fieldKey // ignore: cast_nullable_to_non_nullable
 as String,questionType: null == questionType ? _self.questionType : questionType // ignore: cast_nullable_to_non_nullable
-as QuestionType,category: null == category ? _self.category : category // ignore: cast_nullable_to_non_nullable
-as String,optionsSource: freezed == optionsSource ? _self.optionsSource : optionsSource // ignore: cast_nullable_to_non_nullable
+as QuestionType,purpose: freezed == purpose ? _self.purpose : purpose // ignore: cast_nullable_to_non_nullable
+as String?,optionsSource: freezed == optionsSource ? _self.optionsSource : optionsSource // ignore: cast_nullable_to_non_nullable
 as String?,options: null == options ? _self.options : options // ignore: cast_nullable_to_non_nullable
-as List<String>,
+as List<String>,required: null == required ? _self.required : required // ignore: cast_nullable_to_non_nullable
+as bool,orderIndex: freezed == orderIndex ? _self.orderIndex : orderIndex // ignore: cast_nullable_to_non_nullable
+as int?,
   ));
 }
 
@@ -158,10 +162,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String questionText, @QuestionTypeConverter()  QuestionType questionType,  String category,  String? optionsSource,  List<String> options)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String uid,  String category,  String question,  String fieldKey, @QuestionTypeConverter()  QuestionType questionType,  String? purpose,  String? optionsSource,  List<String> options,  bool required,  int? orderIndex)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _VisaQuestion() when $default != null:
-return $default(_that.id,_that.questionText,_that.questionType,_that.category,_that.optionsSource,_that.options);case _:
+return $default(_that.uid,_that.category,_that.question,_that.fieldKey,_that.questionType,_that.purpose,_that.optionsSource,_that.options,_that.required,_that.orderIndex);case _:
   return orElse();
 
 }
@@ -179,10 +183,10 @@ return $default(_that.id,_that.questionText,_that.questionType,_that.category,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String questionText, @QuestionTypeConverter()  QuestionType questionType,  String category,  String? optionsSource,  List<String> options)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String uid,  String category,  String question,  String fieldKey, @QuestionTypeConverter()  QuestionType questionType,  String? purpose,  String? optionsSource,  List<String> options,  bool required,  int? orderIndex)  $default,) {final _that = this;
 switch (_that) {
 case _VisaQuestion():
-return $default(_that.id,_that.questionText,_that.questionType,_that.category,_that.optionsSource,_that.options);case _:
+return $default(_that.uid,_that.category,_that.question,_that.fieldKey,_that.questionType,_that.purpose,_that.optionsSource,_that.options,_that.required,_that.orderIndex);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -199,10 +203,10 @@ return $default(_that.id,_that.questionText,_that.questionType,_that.category,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String questionText, @QuestionTypeConverter()  QuestionType questionType,  String category,  String? optionsSource,  List<String> options)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String uid,  String category,  String question,  String fieldKey, @QuestionTypeConverter()  QuestionType questionType,  String? purpose,  String? optionsSource,  List<String> options,  bool required,  int? orderIndex)?  $default,) {final _that = this;
 switch (_that) {
 case _VisaQuestion() when $default != null:
-return $default(_that.id,_that.questionText,_that.questionType,_that.category,_that.optionsSource,_that.options);case _:
+return $default(_that.uid,_that.category,_that.question,_that.fieldKey,_that.questionType,_that.purpose,_that.optionsSource,_that.options,_that.required,_that.orderIndex);case _:
   return null;
 
 }
@@ -214,13 +218,15 @@ return $default(_that.id,_that.questionText,_that.questionType,_that.category,_t
 @JsonSerializable()
 
 class _VisaQuestion implements VisaQuestion {
-  const _VisaQuestion({required this.id, required this.questionText, @QuestionTypeConverter() required this.questionType, required this.category, this.optionsSource, final  List<String> options = const []}): _options = options;
+  const _VisaQuestion({required this.uid, required this.category, required this.question, required this.fieldKey, @QuestionTypeConverter() required this.questionType, this.purpose, this.optionsSource, final  List<String> options = const [], this.required = false, this.orderIndex}): _options = options;
   factory _VisaQuestion.fromJson(Map<String, dynamic> json) => _$VisaQuestionFromJson(json);
 
-@override final  String id;
-@override final  String questionText;
-@override@QuestionTypeConverter() final  QuestionType questionType;
+@override final  String uid;
 @override final  String category;
+@override final  String question;
+@override final  String fieldKey;
+@override@QuestionTypeConverter() final  QuestionType questionType;
+@override final  String? purpose;
 @override final  String? optionsSource;
  final  List<String> _options;
 @override@JsonKey() List<String> get options {
@@ -229,6 +235,8 @@ class _VisaQuestion implements VisaQuestion {
   return EqualUnmodifiableListView(_options);
 }
 
+@override@JsonKey() final  bool required;
+@override final  int? orderIndex;
 
 /// Create a copy of VisaQuestion
 /// with the given fields replaced by the non-null parameter values.
@@ -243,16 +251,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _VisaQuestion&&(identical(other.id, id) || other.id == id)&&(identical(other.questionText, questionText) || other.questionText == questionText)&&(identical(other.questionType, questionType) || other.questionType == questionType)&&(identical(other.category, category) || other.category == category)&&(identical(other.optionsSource, optionsSource) || other.optionsSource == optionsSource)&&const DeepCollectionEquality().equals(other._options, _options));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _VisaQuestion&&(identical(other.uid, uid) || other.uid == uid)&&(identical(other.category, category) || other.category == category)&&(identical(other.question, question) || other.question == question)&&(identical(other.fieldKey, fieldKey) || other.fieldKey == fieldKey)&&(identical(other.questionType, questionType) || other.questionType == questionType)&&(identical(other.purpose, purpose) || other.purpose == purpose)&&(identical(other.optionsSource, optionsSource) || other.optionsSource == optionsSource)&&const DeepCollectionEquality().equals(other._options, _options)&&(identical(other.required, required) || other.required == required)&&(identical(other.orderIndex, orderIndex) || other.orderIndex == orderIndex));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,questionText,questionType,category,optionsSource,const DeepCollectionEquality().hash(_options));
+int get hashCode => Object.hash(runtimeType,uid,category,question,fieldKey,questionType,purpose,optionsSource,const DeepCollectionEquality().hash(_options),required,orderIndex);
 
 @override
 String toString() {
-  return 'VisaQuestion(id: $id, questionText: $questionText, questionType: $questionType, category: $category, optionsSource: $optionsSource, options: $options)';
+  return 'VisaQuestion(uid: $uid, category: $category, question: $question, fieldKey: $fieldKey, questionType: $questionType, purpose: $purpose, optionsSource: $optionsSource, options: $options, required: $required, orderIndex: $orderIndex)';
 }
 
 
@@ -263,7 +271,7 @@ abstract mixin class _$VisaQuestionCopyWith<$Res> implements $VisaQuestionCopyWi
   factory _$VisaQuestionCopyWith(_VisaQuestion value, $Res Function(_VisaQuestion) _then) = __$VisaQuestionCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String questionText,@QuestionTypeConverter() QuestionType questionType, String category, String? optionsSource, List<String> options
+ String uid, String category, String question, String fieldKey,@QuestionTypeConverter() QuestionType questionType, String? purpose, String? optionsSource, List<String> options, bool required, int? orderIndex
 });
 
 
@@ -280,15 +288,19 @@ class __$VisaQuestionCopyWithImpl<$Res>
 
 /// Create a copy of VisaQuestion
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? questionText = null,Object? questionType = null,Object? category = null,Object? optionsSource = freezed,Object? options = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? uid = null,Object? category = null,Object? question = null,Object? fieldKey = null,Object? questionType = null,Object? purpose = freezed,Object? optionsSource = freezed,Object? options = null,Object? required = null,Object? orderIndex = freezed,}) {
   return _then(_VisaQuestion(
-id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as String,questionText: null == questionText ? _self.questionText : questionText // ignore: cast_nullable_to_non_nullable
+uid: null == uid ? _self.uid : uid // ignore: cast_nullable_to_non_nullable
+as String,category: null == category ? _self.category : category // ignore: cast_nullable_to_non_nullable
+as String,question: null == question ? _self.question : question // ignore: cast_nullable_to_non_nullable
+as String,fieldKey: null == fieldKey ? _self.fieldKey : fieldKey // ignore: cast_nullable_to_non_nullable
 as String,questionType: null == questionType ? _self.questionType : questionType // ignore: cast_nullable_to_non_nullable
-as QuestionType,category: null == category ? _self.category : category // ignore: cast_nullable_to_non_nullable
-as String,optionsSource: freezed == optionsSource ? _self.optionsSource : optionsSource // ignore: cast_nullable_to_non_nullable
+as QuestionType,purpose: freezed == purpose ? _self.purpose : purpose // ignore: cast_nullable_to_non_nullable
+as String?,optionsSource: freezed == optionsSource ? _self.optionsSource : optionsSource // ignore: cast_nullable_to_non_nullable
 as String?,options: null == options ? _self._options : options // ignore: cast_nullable_to_non_nullable
-as List<String>,
+as List<String>,required: null == required ? _self.required : required // ignore: cast_nullable_to_non_nullable
+as bool,orderIndex: freezed == orderIndex ? _self.orderIndex : orderIndex // ignore: cast_nullable_to_non_nullable
+as int?,
   ));
 }
 

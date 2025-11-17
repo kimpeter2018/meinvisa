@@ -8,12 +8,16 @@ part 'visa_question_model.g.dart';
 @freezed
 abstract class VisaQuestion with _$VisaQuestion {
   const factory VisaQuestion({
-    required String id,
-    required String questionText,
-    @QuestionTypeConverter() required QuestionType questionType,
+    required String uid,
     required String category,
+    required String question,
+    required String fieldKey,
+    @QuestionTypeConverter() required QuestionType questionType,
+    String? purpose,
     String? optionsSource,
     @Default([]) List<String> options,
+    @Default(false) bool required,
+    int? orderIndex,
   }) = _VisaQuestion;
 
   factory VisaQuestion.fromJson(Map<String, dynamic> json) =>
