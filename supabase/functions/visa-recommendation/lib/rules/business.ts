@@ -155,7 +155,7 @@ function buildBusinessNotes(
   if (input.businessInvestment) {
     if (input.businessInvestment < 10000) {
       notes.push(
-        `💰 Your investment (€${input.businessInvestment}) is quite low. Consider:"`,
+        `💰 Your investment (€${input.businessInvestment}) is quite low. Consider:`,
       );
       notes.push("   • Freelance visa (lower capital requirement)");
       notes.push("   • Partnering to increase capital");
@@ -197,7 +197,7 @@ function buildBusinessNotes(
 
   // Language requirements
   const germanLevel = input.germanLevel?.toUpperCase();
-  if (!germanLevel || ["A1", "A2"].includes(germanLevel)) {
+  if (!germanLevel || ["A1", "A2", "NONE"].includes(germanLevel)) {
     notes.push(
       "🗣️ B1-B2 German strongly recommended for business visa (not always required but helpful)",
     );
@@ -281,7 +281,7 @@ function buildBusinessFallback(
   }
 
   const germanLevel = input.germanLevel?.toUpperCase();
-  if (!germanLevel || germanLevel === "A1") {
+  if (!germanLevel || germanLevel === "A1" || germanLevel === "NONE") {
     notes.push("\n🗣️ Step 4: Improve German language skills");
     notes.push("   • B1 minimum recommended");
     notes.push("   • B2 strongly preferred for business interactions");
@@ -317,13 +317,14 @@ function buildBusinessFallback(
       code: "business_preparation_needed",
       name: "Business Visa Preparation Phase",
       summary:
-        "Self-employment visas require thorough preparation. Success rate improves significantly with proper planning.",
-      notes,
+        "Self-employment visas require thorough preparation. Success rate improves significantly with solid planning.",
+      notes: [],
     },
     notes: [
       "Business visas are challenging but achievable with solid preparation",
       "Many successful entrepreneurs started with work visas before switching to self-employment",
       "Consider starting as freelancer (easier) before opening larger business",
+      ...notes,
     ],
   };
 }

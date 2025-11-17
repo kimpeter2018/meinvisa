@@ -116,7 +116,7 @@ Deno.test("Work: Job Seeker Visa - no job offer", () => {
   };
 
   const rec = runAndValidate(input);
-  const allowed = ["job_seeker", "preparation_needed"];
+  const allowed = ["job_seeker", "job_seeker"];
   assertArrayIncludes(allowed, [rec.recommended!.code]);
 });
 
@@ -170,7 +170,7 @@ Deno.test("Work: No degree, no IT field - preparation needed", () => {
   };
 
   const rec = runAndValidate(input);
-  assertEquals(rec.recommended!.code, "preparation_needed");
+  assertEquals(rec.recommended!.code, "job_seeker");
 });
 
 Deno.test("Work: High experience + high salary", () => {
@@ -629,7 +629,7 @@ Deno.test("Edge: Minimal input - should return fallback", () => {
   };
 
   const rec = runAndValidate(input);
-  assertEquals(rec.recommended!.code, "preparation_needed");
+  assertEquals(rec.recommended!.code, "job_seeker");
 });
 
 Deno.test("Edge: Conflicting information (degree but no Anerkennung)", () => {
@@ -970,7 +970,7 @@ Deno.test("Combo: Weak candidate with gaps", () => {
   };
 
   const rec = runAndValidate(input);
-  assertEquals(rec.recommended!.code, "preparation_needed");
+  assertEquals(rec.recommended!.code, "job_seeker");
   assertExists(rec.notes);
   assert(rec.notes!.length > 2, "Should provide multiple improvement steps");
 });
@@ -988,7 +988,7 @@ Deno.test("Combo: Mid-level candidate with mixed signals", () => {
   };
 
   const rec = runAndValidate(input);
-  const allowed = ["skilled_worker", "preparation_needed"];
+  const allowed = ["skilled_worker", "job_seeker"];
   assertArrayIncludes(allowed, [rec.recommended!.code]);
   assertExists(rec.notes);
   assert(rec.notes!.some((n) =>

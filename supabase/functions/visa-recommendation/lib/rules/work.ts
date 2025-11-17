@@ -141,23 +141,6 @@ function buildContextualNotes(
     }
   }
 
-  // Job offer status
-  if (!input.hasJobOffer && topCandidate.category === "work") {
-    notes.push(
-      "💡 Tip: Securing a job offer will significantly improve your visa options and processing time.",
-    );
-
-    // Job search timeline guidance
-    if (input.jobSearchTimeline) {
-      const timeline = input.jobSearchTimeline.toLowerCase();
-      if (timeline.includes("6+")) {
-        notes.push(
-          "🎯 With 6+ months timeline, consider Job Seeker Visa to search on-site in Germany",
-        );
-      }
-    }
-  }
-
   // Salary considerations (UPDATED with new thresholds)
   if (input.hasJobOffer && input.salary) {
     const blueCardThreshold = 58400;
@@ -196,7 +179,7 @@ function buildContextualNotes(
   // Language considerations
   if (input.germanLevel) {
     const level = input.germanLevel.toUpperCase();
-    if (["A1", "A2"].includes(level)) {
+    if (["A1", "A2", "NONE"].includes(level)) {
       notes.push(
         "🗣️ Consider improving your German to B1+ level to unlock more visa options and faster settlement pathways.",
       );
@@ -267,6 +250,16 @@ function buildContextualNotes(
     notes.push("   • May need proof of stable income + health insurance");
   }
 
+  // Job search timeline guidance
+  if (input.jobSearchTimeline) {
+    const timeline = input.jobSearchTimeline.toLowerCase();
+    if (timeline.includes("6+")) {
+      notes.push(
+        "🎯 With 6+ months timeline, consider Job Seeker Visa to search on-site in Germany",
+      );
+    }
+  }
+
   // Application location
   if (input.nationality) {
     const visaFreeCheck = [
@@ -311,7 +304,8 @@ function buildFallbackRecommendation(
   }
 
   if (
-    !input.germanLevel || ["A1", "A2"].includes(input.germanLevel.toUpperCase())
+    !input.germanLevel ||
+    ["A1", "A2", "NONE"].includes(input.germanLevel.toUpperCase())
   ) {
     notes.push(
       "🗣️ Step 3: Improve German language skills to at least B1 level.",
@@ -328,11 +322,12 @@ function buildFallbackRecommendation(
       name: "Preparation Phase Required",
       summary:
         "Based on your current profile, you'll need to strengthen certain qualifications before applying for a work visa. See the notes below for specific steps.",
-      notes,
+      notes: [],
     },
     notes: [
       "This is not a visa rejection - it's a roadmap to improve your eligibility.",
       "Many successful applicants start by addressing these gaps systematically.",
+      ...notes,
     ],
   };
 }

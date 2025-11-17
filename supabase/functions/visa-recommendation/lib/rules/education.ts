@@ -121,7 +121,7 @@ function buildEducationNotes(
     // Previous education guidance (NEW)
     if (input.previousEducationLevel) {
       const prevEd = input.previousEducationLevel.toLowerCase();
-      if (prevEd === "high school") {
+      if (prevEd === "high school" || prevEd.includes("school")) {
         notes.push(
           "🎓 High school graduates often need Studienkolleg (preparatory course) for German universities",
         );
@@ -131,6 +131,7 @@ function buildEducationNotes(
       }
     }
   }
+
   // Study mode validation (NEW)
   if (input.studyMode?.toLowerCase() === "part-time") {
     notes.push(
@@ -160,7 +161,7 @@ function buildEducationNotes(
 
     if (
       studyLang === "german" &&
-      (!germanLevel || ["A1", "A2"].includes(germanLevel))
+      (!germanLevel || ["A1", "A2", "NONE"].includes(germanLevel))
     ) {
       notes.push(
         "🗣️ German-taught programs require B2-C1 German (TestDaF or DSH exam)",
@@ -198,7 +199,7 @@ function buildEducationNotes(
     );
     if (
       !hasLanguageCourse && input.germanLevel &&
-      ["A1", "A2", "B1"].includes(input.germanLevel.toUpperCase())
+      ["A1", "A2", "B1", "NONE"].includes(input.germanLevel.toUpperCase())
     ) {
       notes.push(
         "🎓 Consider a language course visa first to improve German while preparing university applications.",
@@ -357,7 +358,7 @@ function buildEducationFallback(
   const englishLevel = input.englishLevel?.toUpperCase();
 
   if (
-    (!germanLevel || ["A1", "A2"].includes(germanLevel)) &&
+    (!germanLevel || ["A1", "A2", "NONE"].includes(germanLevel)) &&
     (!englishLevel || ["A1", "A2"].includes(englishLevel))
   ) {
     notes.push(
@@ -378,12 +379,13 @@ function buildEducationFallback(
       name: "Education Preparation Phase",
       summary:
         "You're on the path to studying in Germany! Follow these steps to strengthen your application. The education visa is very achievable with proper preparation.",
-      notes,
+      notes: [],
     },
     notes: [
       "Germany has over 400,000 international students - you can be one of them!",
       "Many universities have English-taught programs if German is a barrier.",
       "Public universities charge little to no tuition fees (€0-350/semester).",
+      ...notes,
     ],
   };
 }

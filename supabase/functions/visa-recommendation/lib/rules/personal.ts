@@ -262,7 +262,7 @@ function buildPersonalNotes(
 
     // Language and cultural requirements
     const germanLevel = input.germanLevel?.toUpperCase();
-    if (!germanLevel || ["A1", "A2"].includes(germanLevel)) {
+    if (!germanLevel || ["A1", "A2", "NONE"].includes(germanLevel)) {
       notes.push(
         "🗣️ A1 German minimum required, but A2-B1 is highly recommended for better family matching.",
       );
@@ -297,7 +297,7 @@ function buildPersonalNotes(
 
     // Language requirements
     const germanLevel = input.germanLevel?.toUpperCase();
-    if (!germanLevel || germanLevel === "A1") {
+    if (!germanLevel || germanLevel === "A1" || germanLevel === "NONE") {
       notes.push(
         "🗣️ A2-B1 German is recommended for most volunteer positions (A1 accepted for some).",
       );
@@ -325,6 +325,7 @@ function buildPersonalNotes(
       "Canada",
       "Japan",
       "South Korea",
+      "Korea",
       "Israel",
       "Chile",
       "Argentina",
@@ -365,7 +366,7 @@ function buildPersonalNotes(
 
   // Language learning emphasis
   const germanLevel = input.germanLevel?.toUpperCase();
-  if (!germanLevel || ["A1", "A2"].includes(germanLevel)) {
+  if (!germanLevel || ["A1", "A2", "NONE"].includes(germanLevel)) {
     notes.push(
       "🗣️ Invest in German language learning NOW. It opens more opportunities and helps with integration.",
     );
@@ -495,7 +496,7 @@ function buildPersonalFallback(
     }
 
     const germanLevel = input.germanLevel?.toUpperCase();
-    if (!germanLevel || germanLevel === "A1") {
+    if (!germanLevel || germanLevel === "A1" || germanLevel === "NONE") {
       notes.push(
         "🗣️ Step 3: Learn basic German (A1 minimum, A2 recommended) before applying.",
       );
@@ -518,7 +519,7 @@ function buildPersonalFallback(
     );
 
     const germanLevel = input.germanLevel?.toUpperCase();
-    if (!germanLevel || germanLevel === "A1") {
+    if (!germanLevel || germanLevel === "A1" || germanLevel === "NONE") {
       notes.push(
         "🗣️ Step 3: Improve German to A2-B1 level (makes finding positions much easier).",
       );
@@ -560,12 +561,13 @@ function buildPersonalFallback(
       name: "Personal Visa Preparation Phase",
       summary:
         `You're pursuing a ${pathType} visa - a wonderful way to experience German life and culture. These visas have achievable requirements with proper preparation.`,
-      notes,
+      notes: [],
     },
     notes: [
       "Personal visas offer unique opportunities for cultural exchange and integration.",
       "Many successful work visa holders started with au pair or volunteer programs.",
       "Germany values family unity and cultural exchange - your path is supported by law.",
+      ...notes,
     ],
   };
 }

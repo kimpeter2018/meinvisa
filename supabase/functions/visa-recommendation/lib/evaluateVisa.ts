@@ -35,11 +35,12 @@ export function evaluateVisa(
         code: "unspecified_purpose",
         name: "Insufficient Information",
         summary: "Please select your main purpose for coming to Germany.",
-        notes: [
-          "Common purposes: Work, Study, Research, Family/Personal, Training, Start a Business",
-          "Your choice helps us recommend the most suitable visa type",
-        ],
+        notes: [],
       },
+      notes: [
+        "Common purposes: Work, Study, Research, Family/Personal, Training, Start a Business",
+        "Your choice helps us recommend the most suitable visa type",
+      ],
     };
   }
 
@@ -53,9 +54,9 @@ export function evaluateVisa(
   }
 
   // PRE-PROCESSING: Validate critical impossible combinations
-  const validationIssues = validateInput(input);
-  if (validationIssues) {
-    return validationIssues;
+  const validationResult = validateInput(input);
+  if (validationResult) {
+    return validationResult;
   }
 
   // Add input as context for scoring and personalization
@@ -158,18 +159,17 @@ export function evaluateVisa(
       name: "Unknown Purpose",
       summary:
         "We couldn't identify your purpose for coming to Germany. Please select one of the supported categories.",
-      notes: [
-        "Supported purposes:",
-        "• Work - Employment, job seeking, skilled work",
-        "• Study - University, language courses, vocational training",
-        "• Research - Academic research positions",
-        "• Specialized - Arts, sports, freelance, language teaching",
-        "• Personal - Family reunion, au pair, volunteer, working holiday",
-        "• Training - Professional internships and training programs",
-        "• Business - Start a business, self-employment, freelance",
-      ],
+      notes: [],
     },
     notes: [
+      "Supported purposes:",
+      "• Work - Employment, job seeking, skilled work",
+      "• Study - University, language courses, vocational training",
+      "• Research - Academic research positions",
+      "• Specialized - Arts, sports, freelance, language teaching",
+      "• Personal - Family reunion, au pair, volunteer, working holiday",
+      "• Training - Professional internships and training programs",
+      "• Business - Start a business, self-employment, freelance",
       "If you have multiple purposes, select your PRIMARY purpose",
       "The system will suggest alternatives from other categories as well",
     ],
@@ -177,18 +177,16 @@ export function evaluateVisa(
 }
 
 /**
- * Validate input for impossible combinations - RETURNS blocking errors
+ * Validate input for impossible combinations - RETURNS blocking errors ONLY for critical issues
  */
 function validateInput(
   input: VisaQuestionnaireInput,
 ): VisaRecommendation | null {
-  const issues: string[] = [];
-
   // ===== AGE VALIDATIONS =====
   const age = input.age ??
     (input.birthday ? calculateAge(input.birthday) : undefined);
 
-  // Au Pair age restriction
+  // Au Pair age restriction - BLOCKING
   if (input.personalRoute?.toLowerCase().includes("au pair")) {
     if (age && (age < 18 || age > 26)) {
       return {
@@ -197,20 +195,21 @@ function validateInput(
           name: "Au Pair Age Requirement Not Met",
           summary:
             `You must be between 18-26 years old for an Au Pair visa. Your age: ${age}.`,
-          notes: [
-            "Au Pair programs in Germany have strict age requirements",
-            "Consider alternative visa types:",
-            "• Language Course Visa (if learning German)",
-            "• Volunteer Service Visa (FSJ/BFD)",
-            "• Work Visa (if you have qualifications)",
-            "• Student Visa (if pursuing education)",
-          ],
+          notes: [],
         },
+        notes: [
+          "Au Pair programs in Germany have strict age requirements",
+          "Consider alternative visa types:",
+          "• Language Course Visa (if learning German)",
+          "• Volunteer Service Visa (FSJ/BFD)",
+          "• Work Visa (if you have qualifications)",
+          "• Student Visa (if pursuing education)",
+        ],
       };
     }
   }
 
-  // Working Holiday age restriction
+  // Working Holiday age restriction - BLOCKING
   if (input.personalRoute?.toLowerCase().includes("working holiday")) {
     if (age && (age < 18 || age > 30)) {
       return {
@@ -218,26 +217,20 @@ function validateInput(
           code: "working_holiday_age_ineligible",
           name: "Working Holiday Age Requirement Not Met",
           summary: `Working Holiday visa requires age 18-30. Your age: ${age}.`,
-          notes: [
-            "Working Holiday agreements have strict age limits",
-            "Consider alternative visa types if you're over 30:",
-            "• Job Seeker Visa (6 months to find work)",
-            "• Work Visa (with job offer)",
-            "• Language Course Visa",
-          ],
+          notes: [],
         },
+        notes: [
+          "Working Holiday agreements have strict age limits",
+          "Consider alternative visa types if you're over 30:",
+          "• Job Seeker Visa (6 months to find work)",
+          "• Work Visa (with job offer)",
+          "• Language Course Visa",
+        ],
       };
     }
   }
 
-  // Minor without guardian info
-  if (age && age < 18 && input.purpose !== "family") {
-    issues.push(
-      "⚠️ As a minor (under 18), you need special guardian arrangements in Germany",
-    );
-  }
-
-  // ===== STUDY MODE VALIDATION =====
+  // ===== STUDY MODE VALIDATION - BLOCKING =====
   if (
     input.eduLevel?.toLowerCase().includes("university") &&
     input.studyMode?.toLowerCase() === "part-time"
@@ -248,18 +241,19 @@ function validateInput(
         name: "Part-Time Study Not Eligible",
         summary:
           "Student visas require full-time enrollment. Part-time study does not qualify.",
-        notes: [
-          "German student visas require full-time enrollment (minimum 18 hours/week)",
-          "Options:",
-          "• Switch to full-time program if possible",
-          "• Consider other visa types (work visa if employed)",
-          "• Evening/weekend programs generally don't qualify for student visas",
-        ],
+        notes: [],
       },
+      notes: [
+        "German student visas require full-time enrollment (minimum 18 hours/week)",
+        "Options:",
+        "• Switch to full-time program if possible",
+        "• Consider other visa types (work visa if employed)",
+        "• Evening/weekend programs generally don't qualify for student visas",
+      ],
     };
   }
 
-  // ===== LANGUAGE COURSE VALIDATION =====
+  // ===== LANGUAGE COURSE VALIDATION - BLOCKING =====
   if (input.isLanguageCourse && input.fulltimeGerman === false) {
     return {
       recommended: {
@@ -267,64 +261,19 @@ function validateInput(
         name: "Part-Time Language Course Not Eligible",
         summary:
           "Language course visas require full-time enrollment (18+ hours per week).",
-        notes: [
-          "To qualify for a language course visa, you must attend:",
-          "• Minimum 18 hours of instruction per week",
-          "• Intensive German language course",
-          "Options if you want part-time study:",
-          "• Take the course while on tourist visa (if visa-free nationality)",
-          "• Come on another visa type (work, family reunion, etc.)",
-        ],
+        notes: [],
       },
+      notes: [
+        "To qualify for a language course visa, you must attend:",
+        "• Minimum 18 hours of instruction per week",
+        "• Intensive German language course",
+        "Options if you want part-time study:",
+        "• Take the course while on tourist visa (if visa-free nationality)",
+        "• Come on another visa type (work, family reunion, etc.)",
+      ],
     };
   }
 
-  // ===== SALARY VALIDATION =====
-  if (input.hasJobOffer && input.salary) {
-    // Blue Card minimum
-    if (input.purpose?.toLowerCase() === "work" && input.salary < 45600) {
-      issues.push(
-        `💰 Your salary (€${input.salary}) is below the Blue Card threshold (€45,600 for shortage occupations, €58,400 general)`,
-      );
-    }
-  }
-
-  // ===== HOST AGREEMENT VALIDATION =====
-  if (input.purpose?.toLowerCase() === "research" && !input.hasHostAgreement) {
-    issues.push(
-      "📋 Research visas require a hosting agreement from a German institution",
-    );
-  }
-
-  // ===== ADMISSION VALIDATION =====
-  if (
-    input.eduLevel?.toLowerCase().includes("university") && !input.admitted &&
-    input.admitted !== undefined
-  ) {
-    issues.push(
-      "🎓 You need university admission before applying for a student visa",
-    );
-  }
-
-  // ===== BUSINESS PLAN VALIDATION =====
-  if (
-    input.purpose?.toLowerCase().includes("business") &&
-    input.hasBusinessPlan === false
-  ) {
-    issues.push("💼 Self-employment visas require a detailed business plan");
-  }
-
-  // Return issues if any (non-blocking warnings)
-  if (issues.length > 0) {
-    return {
-      recommended: {
-        code: "validation_warnings",
-        name: "Please Address These Issues",
-        summary: "Your application has some issues that need attention:",
-        notes: issues,
-      },
-    };
-  }
-
-  return null; // No validation issues
+  // All other validations are NON-BLOCKING - let the scoring engine handle them
+  return null;
 }

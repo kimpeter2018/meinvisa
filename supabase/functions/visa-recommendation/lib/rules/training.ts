@@ -156,7 +156,7 @@ function buildTrainingNotes(
 
   // German language
   const germanLevel = input.germanLevel?.toUpperCase();
-  if (!germanLevel || ["A1", "A2"].includes(germanLevel)) {
+  if (!germanLevel || ["A1", "A2", "NONE"].includes(germanLevel)) {
     notes.push(
       "🗣️ B1 German is recommended for most training positions (though not always required).",
     );
@@ -210,7 +210,7 @@ function buildTrainingFallback(
   }
 
   const germanLevel = input.germanLevel?.toUpperCase();
-  if (!germanLevel || germanLevel === "A1") {
+  if (!germanLevel || germanLevel === "A1" || germanLevel === "NONE") {
     notes.push(
       "🗣️ Step 4: Improve German to at least A2-B1 level (helpful but not always required)",
     );
@@ -227,12 +227,13 @@ function buildTrainingFallback(
       name: "Training Visa Preparation Phase",
       summary:
         "Training/internship visas are very achievable with proper preparation. Follow the steps below.",
-      notes,
+      notes: [],
     },
     notes: [
       "Training visas typically process in 6-12 weeks",
       "Success rate is high for applicants with confirmed training agreements",
       "Training can lead directly to employment and work visa",
+      ...notes,
     ],
   };
 }
