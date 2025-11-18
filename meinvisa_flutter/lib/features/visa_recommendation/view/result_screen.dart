@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:meinvisa/data/models/visa_recommendation_response_model/visa_recommendation_response_model.dart';
 import 'package:meinvisa/features/home/view/home_layout.dart';
+import 'package:meinvisa/features/visa_application/view/application_review_screen.dart';
 
 class VisaResultScreen extends StatelessWidget {
   static const routeName = '/visa-result';
@@ -45,11 +46,7 @@ class VisaResultScreen extends StatelessWidget {
                       color: Colors.white.withValues(alpha: 0.2),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
-                      Icons.check_circle_outline,
-                      size: 56,
-                      color: Colors.white,
-                    ),
+                    child: const Icon(Icons.check_circle_outline, size: 56, color: Colors.white),
                   ),
                   const SizedBox(height: 20),
                   const Text(
@@ -86,9 +83,7 @@ class VisaResultScreen extends StatelessWidget {
                 ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
-              ...result.alternatives.map(
-                (alt) => _buildAlternativeVisa(context, alt),
-              ),
+              ...result.alternatives.map((alt) => _buildAlternativeVisa(context, alt)),
             ],
 
             const SizedBox(height: 24),
@@ -110,21 +105,13 @@ class VisaResultScreen extends StatelessWidget {
             // Action buttons
             FilledButton.icon(
               onPressed: () {
-                // TODO: Navigate to application guide
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Application guide coming soon!'),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
+                context.push(ApplicationReviewScreen.routeName, extra: result);
               },
               icon: const Icon(Icons.assignment_outlined),
               label: const Text('Start Application Process'),
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
 
@@ -136,9 +123,7 @@ class VisaResultScreen extends StatelessWidget {
               label: const Text('Back to Home'),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
 
@@ -164,10 +149,7 @@ class VisaResultScreen extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 6,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                   decoration: BoxDecoration(
                     color: Colors.green[50],
                     borderRadius: BorderRadius.circular(20),
@@ -192,29 +174,18 @@ class VisaResultScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 18),
-            Text(
-              visa.name,
-              style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
-            ),
+            Text(visa.name, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Text(
               visa.code.toUpperCase(),
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w500,
-              ),
+              style: TextStyle(fontSize: 13, color: Colors.grey[600], fontWeight: FontWeight.w500),
             ),
             const SizedBox(height: 18),
             Text(
               visa.summary.split('\n').first,
-              style: TextStyle(
-                fontSize: 15,
-                color: Colors.grey[800],
-                height: 1.5,
-              ),
+              style: TextStyle(fontSize: 15, color: Colors.grey[800], height: 1.5),
             ),
-            if (visa.requirements.isNotEmpty) ...[
+            if (visa.requirements!.isNotEmpty) ...[
               const SizedBox(height: 24),
               const Divider(),
               const SizedBox(height: 16),
@@ -227,34 +198,25 @@ class VisaResultScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 12),
-              ...visa.requirements.map(
+              ...visa.requirements!.map(
                 (req) => Padding(
                   padding: const EdgeInsets.only(bottom: 10),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Icon(
-                        req.startsWith('✓')
-                            ? Icons.check_circle
-                            : Icons.warning_amber,
+                        req.startsWith('✓') ? Icons.check_circle : Icons.warning_amber,
                         size: 20,
-                        color: req.startsWith('✓')
-                            ? Colors.green[600]
-                            : Colors.orange[600],
+                        color: req.startsWith('✓') ? Colors.green[600] : Colors.orange[600],
                       ),
                       const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          req,
-                          style: const TextStyle(fontSize: 14, height: 1.4),
-                        ),
-                      ),
+                      Expanded(child: Text(req, style: const TextStyle(fontSize: 14, height: 1.4))),
                     ],
                   ),
                 ),
               ),
             ],
-            if (visa.notes.isNotEmpty) ...[
+            if (visa.notes!.isNotEmpty) ...[
               const SizedBox(height: 20),
               Container(
                 padding: const EdgeInsets.all(16),
@@ -267,11 +229,7 @@ class VisaResultScreen extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Icon(
-                          Icons.info_outline,
-                          size: 20,
-                          color: Colors.blue[700],
-                        ),
+                        Icon(Icons.info_outline, size: 20, color: Colors.blue[700]),
                         const SizedBox(width: 8),
                         Text(
                           'Additional Information',
@@ -284,16 +242,12 @@ class VisaResultScreen extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 10),
-                    ...visa.notes.map(
+                    ...visa.notes!.map(
                       (note) => Padding(
                         padding: const EdgeInsets.only(bottom: 8),
                         child: Text(
                           note,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.blue[900],
-                            height: 1.4,
-                          ),
+                          style: TextStyle(fontSize: 13, color: Colors.blue[900], height: 1.4),
                         ),
                       ),
                     ),
@@ -316,19 +270,12 @@ class VisaResultScreen extends StatelessWidget {
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
           tilePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-          title: Text(
-            visa.name,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
+          title: Text(visa.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           subtitle: Padding(
             padding: const EdgeInsets.only(top: 4),
             child: Text(
               visa.code.toUpperCase(),
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w500,
-              ),
+              style: TextStyle(fontSize: 12, color: Colors.grey[600], fontWeight: FontWeight.w500),
             ),
           ),
           children: [
@@ -339,23 +286,16 @@ class VisaResultScreen extends StatelessWidget {
                 children: [
                   Text(
                     visa.summary.split('\n').first,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[800],
-                      height: 1.5,
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey[800], height: 1.5),
                   ),
-                  if (visa.requirements.isNotEmpty) ...[
+                  if (visa.requirements!.isNotEmpty) ...[
                     const SizedBox(height: 12),
                     const Divider(),
                     const SizedBox(height: 8),
-                    ...visa.requirements.map(
+                    ...visa.requirements!.map(
                       (req) => Padding(
                         padding: const EdgeInsets.only(bottom: 6),
-                        child: Text(
-                          '• $req',
-                          style: const TextStyle(fontSize: 13),
-                        ),
+                        child: Text('• $req', style: const TextStyle(fontSize: 13)),
                       ),
                     ),
                   ],
@@ -383,17 +323,10 @@ class VisaResultScreen extends StatelessWidget {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        Icons.lightbulb_outline,
-                        size: 20,
-                        color: Colors.amber[700],
-                      ),
+                      Icon(Icons.lightbulb_outline, size: 20, color: Colors.amber[700]),
                       const SizedBox(width: 10),
                       Expanded(
-                        child: Text(
-                          note,
-                          style: const TextStyle(fontSize: 14, height: 1.4),
-                        ),
+                        child: Text(note, style: const TextStyle(fontSize: 14, height: 1.4)),
                       ),
                     ],
                   ),
