@@ -111,12 +111,13 @@ class VisaRecommendationRepository {
         params: {'p_profession': profession, 'p_degree_field': degreeField},
       );
 
-      if (response == null) {
+      if (response == null || response is! List || response.isEmpty) {
         DebugLogger().log('⚠️ No derived attributes returned');
         return {};
       }
 
-      final derived = response as Map<String, dynamic>;
+      final derived = response.first as Map<String, dynamic>;
+
       DebugLogger().log('✅ Derived attributes: $derived');
 
       return {

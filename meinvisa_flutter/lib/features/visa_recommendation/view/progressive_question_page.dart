@@ -573,21 +573,21 @@ class _ProgressiveQuestionPageState extends ConsumerState<ProgressiveQuestionPag
   }
 }
 
-// Helper widget for radio groups
-class RadioGroup extends StatelessWidget {
-  final Function(bool?) onChanged;
-  final bool? groupValue;
-  final Widget child;
+// // Helper widget for radio groups
+// class RadioGroup extends StatelessWidget {
+//   final Function(bool?) onChanged;
+//   final bool? groupValue;
+//   final Widget child;
 
-  const RadioGroup({
-    super.key,
-    required this.onChanged,
-    required this.groupValue,
-    required this.child,
-  });
+//   const RadioGroup({
+//     super.key,
+//     required this.onChanged,
+//     required this.groupValue,
+//     required this.child,
+//   });
 
-  @override
-  Widget build(BuildContext context) {
-    return child;
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     return child;
+//   }
+// }
