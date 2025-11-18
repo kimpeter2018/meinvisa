@@ -93,6 +93,162 @@ class VisaRecommendationRepository {
   }
 
   /// ============================================
+  /// AUTO-DERIVATION LOGIC
+  /// ============================================
+
+  /// Derive field attributes from profession or degree field
+  Future<Map<String, dynamic>> deriveFieldAttributes({
+    String? profession,
+    String? degreeField,
+  }) async {
+    try {
+      DebugLogger().log(
+        '🔄 Deriving field attributes from profession: $profession, degree: $degreeField',
+      );
+
+      final response = await _supabase.rpc(
+        'derive_field_attributes',
+        params: {'p_profession': profession, 'p_degree_field': degreeField},
+      );
+
+      if (response == null) {
+        DebugLogger().log('⚠️ No derived attributes returned');
+        return {};
+      }
+
+      final derived = response as Map<String, dynamic>;
+      DebugLogger().log('✅ Derived attributes: $derived');
+
+      return {
+        'is_it_field': derived['is_it_field'],
+        'is_healthcare': derived['is_healthcare'],
+        'is_engineer': derived['is_engineer'],
+        'is_stem': derived['is_stem'],
+        if (derived['it_specialization'] != null) 'it_specialization': derived['it_specialization'],
+        if (derived['healthcare_profession'] != null)
+          'healthcare_profession': derived['healthcare_profession'],
+        if (derived['engineering_field'] != null) 'engineering_field': derived['engineering_field'],
+      };
+    } catch (e, st) {
+      DebugLogger().error('❌ Error deriving field attributes', e, st);
+      return {};
+    }
+  }
+
+  /// Get university details from database
+  Future<Map<String, dynamic>> getUniversityDetails(String universityName) async {
+    try {
+      DebugLogger().log('🔄 Fetching university details for: $universityName');
+
+      final response = await _supabase.rpc(
+        'get_university_details',
+        params: {'p_university_name': universityName},
+      );
+
+      if (response == null) {
+        DebugLogger().log('⚠️ No university details found');
+        return {};
+      }
+
+      final details = response as Map<String, dynamic>;
+      DebugLogger().log('✅ University details: $details');
+
+      return {
+        'university_country': details['country'],
+        'city': details['city'],
+        'is_recognized': details['is_recognized'],
+        'anabin_status': details['anabin_status'],
+      };
+    } catch (e, st) {
+      DebugLogger().error('❌ Error fetching university details', e, st);
+      return {};
+    }
+  }
+
+  /// Check if degree needs Anerkennung
+  Future<bool> needsAnerkennung({
+    String? universityName,
+    String? universityCountry,
+    String? degreeField,
+  }) async {
+    try {
+      DebugLogger().log('🔄 Checking Anerkennung requirement');
+
+      final response = await _supabase.rpc(
+        'needs_anerkennung',
+        params: {
+          'p_university_name': universityName,
+          'p_university_country': universityCountry,
+          'p_degree_field': degreeField,
+        },
+      );
+
+      final needs = response as bool? ?? false;
+      DebugLogger().log('✅ Needs Anerkennung: $needs');
+
+      return needs;
+    } catch (e, st) {
+      DebugLogger().error('❌ Error checking Anerkennung', e, st);
+      return false;
+    }
+  }
+
+  /// Auto-populate derived fields when user answers key questions
+  Future<Map<String, dynamic>> autoPopulateDerivedFields(
+    String fieldKey,
+    dynamic answer,
+    Map<String, dynamic> allAnswers,
+  ) async {
+    final derivedFields = <String, dynamic>{};
+
+    try {
+      // Derive from profession
+      if (fieldKey == 'profession' && answer != null) {
+        final derived = await deriveFieldAttributes(profession: answer.toString());
+        derivedFields.addAll(derived);
+      }
+
+      // Derive from degree field
+      if (fieldKey == 'degree_field' && answer != null) {
+        final derived = await deriveFieldAttributes(degreeField: answer.toString());
+        derivedFields.addAll(derived);
+      }
+
+      // Derive from university (work context)
+      if (fieldKey == 'university_name_work' && answer != null) {
+        final details = await getUniversityDetails(answer.toString());
+        derivedFields.addAll(details);
+
+        // Check Anerkennung requirement
+        final needsAnerk = await needsAnerkennung(
+          universityName: answer.toString(),
+          degreeField: allAnswers['degree_field']?.toString(),
+        );
+        derivedFields['anerkennung_required'] = needsAnerk;
+
+        // Auto-set has_anerkennung to false if required (user needs to get it)
+        if (needsAnerk && !allAnswers.containsKey('has_anerkennung')) {
+          derivedFields['has_anerkennung'] = false;
+        }
+      }
+
+      // Derive from university (education context)
+      if (fieldKey == 'university_name_edu' && answer != null) {
+        final details = await getUniversityDetails(answer.toString());
+        derivedFields.addAll(details);
+      }
+
+      if (derivedFields.isNotEmpty) {
+        DebugLogger().log('✅ Auto-populated ${derivedFields.length} derived fields');
+      }
+    } catch (e, st) {
+      DebugLogger().error('❌ Error auto-populating derived fields', e, st);
+    }
+
+    return derivedFields;
+  }
+
+  /// ============================================
   /// QUESTION FETCHING
   /// ============================================
 
@@ -115,7 +271,7 @@ class VisaRecommendationRepository {
     }
   }
 
-  /// UPDATED: Now passes all answers as JSONB for complex logic
+  /// Fetch next questions with auto-derivation support
   Future<List<VisaQuestion>> getNextQuestions(
     String fieldKey,
     dynamic answer,
@@ -124,7 +280,7 @@ class VisaRecommendationRepository {
     try {
       DebugLogger().log('🔍 Fetching next questions for: $fieldKey = $answer');
 
-      // Convert current draft to JSONB for the function
+      // Get all current answers including derived fields
       final allAnswers = _draft?.toJson() ?? {};
 
       // Add the current answer
@@ -132,6 +288,18 @@ class VisaRecommendationRepository {
         allAnswers.addAll(answer);
       } else {
         allAnswers[fieldKey] = answer;
+      }
+
+      // Auto-populate derived fields
+      final derivedFields = await autoPopulateDerivedFields(fieldKey, answer, allAnswers);
+
+      // Merge derived fields into all answers
+      allAnswers.addAll(derivedFields);
+
+      // Update draft with derived fields
+      if (derivedFields.isNotEmpty) {
+        final updatedDraft = VisaQuestionnaire.fromJson(allAnswers);
+        await saveDraft(updatedDraft);
       }
 
       String answerStr = _convertAnswerToString(answer);
@@ -142,7 +310,7 @@ class VisaRecommendationRepository {
           'p_field_key': fieldKey,
           'p_answer': answerStr,
           'p_answered_fields': answeredFields,
-          'p_all_answers': allAnswers, // NEW: Pass all answers for complex logic
+          'p_all_answers': allAnswers,
         },
       );
 
@@ -170,8 +338,6 @@ class VisaRecommendationRepository {
     if (answer is bool) return answer.toString();
     if (answer is DateTime) return answer.toIso8601String();
     if (answer is Map) {
-      // For multi-field answers like birthday+age, use the primary field
-      // Find the first non-null value
       final firstValue = answer.values.firstWhere((v) => v != null, orElse: () => '');
       if (firstValue is DateTime) return firstValue.toIso8601String();
       return firstValue.toString();
@@ -184,7 +350,6 @@ class VisaRecommendationRepository {
     final answeredFields = data.toJson().keys.where((k) => data.toJson()[k] != null).toSet();
 
     try {
-      // Get all questions that should have been asked based on the flow
       final allQuestions = await _supabase
           .from('visa_questions')
           .select('field_key, required, category, purpose_filter')
@@ -192,12 +357,11 @@ class VisaRecommendationRepository {
 
       final requiredQuestions = (allQuestions as List)
           .where((q) {
-            // Check if this question's purpose matches user's purpose
             final purposeFilter = q['purpose_filter'] as List?;
             final userPurpose = data.purpose;
 
             if (purposeFilter == null || purposeFilter.isEmpty || userPurpose == null) {
-              return q['category'] == 'universal'; // Only universal questions are always required
+              return q['category'] == 'universal';
             }
 
             return purposeFilter.contains(userPurpose);
@@ -298,9 +462,32 @@ class VisaRecommendationRepository {
       throw Exception('User not logged in');
     }
 
+    // Ensure all derived fields are populated before submission
+    final allAnswers = data.toJson();
+
+    // Derive field attributes if not already present
+    if (allAnswers['profession'] != null &&
+        (allAnswers['is_it_field'] == null ||
+            allAnswers['is_healthcare'] == null ||
+            allAnswers['is_engineer'] == null)) {
+      final derived = await deriveFieldAttributes(profession: allAnswers['profession']?.toString());
+      allAnswers.addAll(derived);
+    }
+
+    // Derive university details if not already present
+    if (allAnswers['university_name_work'] != null && allAnswers['university_country'] == null) {
+      final details = await getUniversityDetails(allAnswers['university_name_work'].toString());
+      allAnswers.addAll(details);
+    }
+
+    if (allAnswers['university_name_edu'] != null && allAnswers['university_country'] == null) {
+      final details = await getUniversityDetails(allAnswers['university_name_edu'].toString());
+      allAnswers.addAll(details);
+    }
+
     final response = await _supabase.functions.invoke(
       'visa-recommendation',
-      body: data.toJson(),
+      body: allAnswers,
       headers: {'Authorization': 'Bearer $userToken'},
     );
 
@@ -317,7 +504,6 @@ class VisaRecommendationRepository {
       throw Exception("Empty response from visa eligibility function.");
     }
 
-    // Parse the response data
     final Map<String, dynamic> responseData = response.data is String
         ? jsonDecode(response.data)
         : response.data as Map<String, dynamic>;
