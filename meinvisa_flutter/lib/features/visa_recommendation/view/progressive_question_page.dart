@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:meinvisa/core/debug/debug_logger.dart';
 import 'package:meinvisa/data/models/visa_question_model/visa_question_model.dart';
 import 'package:meinvisa/data/models/visa_question_model/question_type.dart';
+import 'package:meinvisa/data/providers/visa_recommendation_provider.dart';
 import 'package:meinvisa/features/visa_recommendation/widgets/date_picker.dart';
+import 'package:meinvisa/features/visa_recommendation/widgets/enhanced_autocomplete.dart';
 
-class ProgressiveQuestionPage extends StatefulWidget {
+class ProgressiveQuestionPage extends ConsumerStatefulWidget {
   final VisaQuestion? currentQuestion;
   final Map<String, dynamic> answers;
   final List<VisaQuestion> answeredQuestions;
@@ -25,16 +28,15 @@ class ProgressiveQuestionPage extends StatefulWidget {
   });
 
   @override
-  State<ProgressiveQuestionPage> createState() => _ProgressiveQuestionPageState();
+  ConsumerState<ProgressiveQuestionPage> createState() => _ProgressiveQuestionPageState();
 }
 
-class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage>
+class _ProgressiveQuestionPageState extends ConsumerState<ProgressiveQuestionPage>
     with SingleTickerProviderStateMixin {
   bool _isSubmitting = false;
   dynamic _currentAnswer;
   final ScrollController _scrollController = ScrollController();
 
-  // Track which question is being edited
   VisaQuestion? _editingQuestion;
 
   @override
@@ -54,12 +56,10 @@ class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage>
   void didUpdateWidget(ProgressiveQuestionPage oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // Reset answer when question changes
     if (widget.currentQuestion != oldWidget.currentQuestion) {
-      _editingQuestion = null; // Clear editing state
+      _editingQuestion = null;
       _initializeAnswer();
 
-      // Scroll to bottom to show new question
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_scrollController.hasClients) {
           _scrollController.animateTo(
@@ -96,16 +96,14 @@ class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage>
     setState(() => _isSubmitting = true);
 
     try {
-      // If birthday, also pass age along (but don't modify widget.answers)
       if (questionToAnswer.fieldKey == 'birthday') {
         final birthdayDate = _currentAnswer as DateTime;
         final age = _calculateAge(birthdayDate);
 
         DebugLogger().log('🎂 Submitting birthday: $birthdayDate with age: $age');
 
-        // Pass both birthday and age in a single answer map
         await widget.onNext(questionToAnswer, {
-          'birthday': birthdayDate.toIso8601String(), // Convert to string for JSON serialization
+          'birthday': birthdayDate.toIso8601String(),
           'age': age,
         });
       } else {
@@ -115,7 +113,7 @@ class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage>
       setState(() {
         _currentAnswer = null;
         _isSubmitting = false;
-        _editingQuestion = null; // Clear editing state after successful answer
+        _editingQuestion = null;
       });
     } catch (e) {
       setState(() => _isSubmitting = false);
@@ -139,12 +137,10 @@ class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage>
       _currentAnswer = widget.answers[q.fieldKey];
     });
 
-    // Notify parent to handle re-answer logic
     if (widget.onEdit != null) {
       widget.onEdit!(q);
     }
 
-    // Scroll to show the question
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
@@ -166,6 +162,39 @@ class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage>
     }
 
     return age;
+  }
+
+  /// Determine field type for auto-population
+  String? _getFieldType(VisaQuestion q) {
+    if (q.fieldKey == 'profession') return 'profession';
+    if (q.fieldKey == 'university_name_work' || q.fieldKey == 'university_name_edu') {
+      return 'university';
+    }
+    if (q.fieldKey == 'degree_field') return 'degree_field';
+    return null;
+  }
+
+  /// Fetch derived details for autocomplete fields
+  Future<Map<String, dynamic>> _fetchDerivedDetails(VisaQuestion q, String selection) async {
+    final repo = ref.read(visaRecommendationRepositoryProvider);
+
+    try {
+      if (q.fieldKey == 'profession') {
+        return await repo.deriveFieldAttributes(profession: selection);
+      }
+
+      if (q.fieldKey == 'university_name_work' || q.fieldKey == 'university_name_edu') {
+        return await repo.getUniversityDetails(selection);
+      }
+
+      if (q.fieldKey == 'degree_field') {
+        return await repo.deriveFieldAttributes(degreeField: selection);
+      }
+    } catch (e) {
+      DebugLogger().error('Error fetching derived details', e);
+    }
+
+    return {};
   }
 
   Widget _buildInput(VisaQuestion q) {
@@ -228,44 +257,28 @@ class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage>
           hintText: 'DD/MM/YYYY',
           onDateChanged: (date) {
             setState(() {
-              _currentAnswer = date; // Just store the date, don't calculate age here
+              _currentAnswer = date;
             });
           },
         );
+
       case QuestionType.autocomplete:
-        return Autocomplete<String>(
-          initialValue: _currentAnswer is String ? TextEditingValue(text: _currentAnswer) : null,
-          optionsBuilder: (TextEditingValue textEditingValue) {
-            if (textEditingValue.text.isEmpty) {
-              return const Iterable<String>.empty();
-            }
-            // q.options contains the list of suggestions
-            return q.options.where(
-              (option) => option.toLowerCase().contains(textEditingValue.text.toLowerCase()),
-            );
-          },
-          onSelected: (String selection) {
+        final fieldType = _getFieldType(q);
+
+        return EnhancedAutocomplete(
+          initialValue: _currentAnswer is String ? _currentAnswer : null,
+          options: q.options,
+          labelText: q.question,
+          hintText: 'Type to search',
+          fieldType: fieldType,
+          onSelected: (selection) {
             setState(() {
               _currentAnswer = selection;
             });
           },
-          fieldViewBuilder: (context, controller, focusNode, onEditingComplete) {
-            if (_currentAnswer is String && controller.text != _currentAnswer) {
-              controller.text = _currentAnswer;
-            }
-            return TextFormField(
-              controller: controller,
-              focusNode: focusNode,
-              decoration: InputDecoration(
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                filled: true,
-                fillColor: Colors.grey[50],
-                contentPadding: const EdgeInsets.all(16),
-                hintText: 'Type to search',
-              ),
-              onEditingComplete: onEditingComplete,
-            );
-          },
+          onFetchDetails: fieldType != null
+              ? (selection) => _fetchDerivedDetails(q, selection)
+              : null,
         );
 
       case QuestionType.text:
@@ -288,7 +301,6 @@ class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage>
   String _formatAnswer(dynamic answer) {
     if (answer == null) return 'Not answered';
     if (answer is bool) return answer ? 'Yes' : 'No';
-    // Handle stringified DateTimes (like "1999-08-08T00:00:00.000")
     if (answer is String && DateTime.tryParse(answer) != null) {
       final parsed = DateTime.parse(answer);
       return '${parsed.day}/${parsed.month}/${parsed.year}';
@@ -305,7 +317,6 @@ class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage>
     final answer = widget.answers[q.fieldKey];
     final isBeingEdited = _editingQuestion?.fieldKey == q.fieldKey;
 
-    // Don't show as collapsed if currently being edited
     if (isBeingEdited) {
       return const SizedBox.shrink();
     }
@@ -387,7 +398,6 @@ class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Category badge
               Align(
                 alignment: Alignment.centerLeft,
                 child: Container(
@@ -409,7 +419,6 @@ class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage>
               ),
               const SizedBox(height: 16),
 
-              // Question text
               Text(
                 q.question,
                 style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, height: 1.3),
@@ -425,11 +434,9 @@ class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage>
 
               const SizedBox(height: 24),
 
-              // Input widget
               _buildInput(q),
               const SizedBox(height: 24),
 
-              // Next button
               ElevatedButton(
                 onPressed: _isSubmitting ? null : _handleNext,
                 style: ElevatedButton.styleFrom(
@@ -552,12 +559,10 @@ class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage>
         controller: _scrollController,
         padding: const EdgeInsets.all(16),
         children: [
-          // Answered questions (collapsed) - only show if not being edited
           ...widget.answeredQuestions.asMap().entries.map((entry) {
             return _buildCollapsedQuestion(entry.value, entry.key);
           }),
 
-          // Active question or completion card
           if (isComplete)
             _buildCompletionCard()
           else if (questionToShow != null)
@@ -565,5 +570,24 @@ class _ProgressiveQuestionPageState extends State<ProgressiveQuestionPage>
         ],
       ),
     );
+  }
+}
+
+// Helper widget for radio groups
+class RadioGroup extends StatelessWidget {
+  final Function(bool?) onChanged;
+  final bool? groupValue;
+  final Widget child;
+
+  const RadioGroup({
+    super.key,
+    required this.onChanged,
+    required this.groupValue,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return child;
   }
 }
