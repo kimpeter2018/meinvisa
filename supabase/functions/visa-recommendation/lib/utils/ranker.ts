@@ -1,5 +1,3 @@
-// lib/utils/ranker.ts - UPDATED with comprehensive criterion evaluation
-
 import type { VisaCandidate, VisaQuestionnaireInput } from "../types.ts";
 import {
   isVisaFreeNationality,
@@ -7,13 +5,11 @@ import {
 } from "./nationality.ts";
 import {
   calculateAge,
-  calculateSalaryMatch,
   isAgeInRange,
   isHealthcareField,
   isItField,
   isStemField,
   meetsLanguageRequirement,
-  meetsSalaryRequirement,
 } from "./matchHelpers.ts";
 import visasJson from "../constants/visas.json" with { type: "json" };
 
@@ -67,14 +63,7 @@ function loadAllVisas(): Array<{ code: string; meta: any; category: string }> {
 }
 
 /**
- * COMPREHENSIVE criterion evaluation matching ALL database fields
- *
- * Returns:
- * - met: boolean (true if requirement is satisfied)
- * - partialFactor: 0..1 (partial credit for near-matches)
- * - disqualifyIfMissing: boolean (true if this is a strict requirement)
- * - reason: string (explanation for logging)
- * - detail: string (additional context)
+ * FIXED: Enhanced criterion evaluation with proper negative criteria handling
  */
 function evaluateCriterion(
   keyRaw: string,
@@ -97,11 +86,34 @@ function evaluateCriterion(
   };
 
   let key = keyRaw;
+  let isNegativeCriterion = false;
 
   // Check if strict requirement (starts with "!")
   if (key.startsWith("!")) {
-    result.disqualifyIfMissing = true;
     key = key.slice(1);
+
+    // Determine if this is a negative criterion
+    // Negative criterion: the field should be FALSE/absent (e.g., !has_job_offer for job_seeker)
+    // Positive strict criterion: the field should be TRUE/present (e.g., !has_degree for blue_card)
+
+    // Check if this is a boolean field that should be false
+    const booleanNegativeFields = [
+      "has_job_offer",
+      "has_degree",
+      "has_vocational",
+      "is_language_course",
+      "is_ausbildung",
+      "is_it_field",
+      "is_healthcare",
+      "is_engineer",
+    ];
+
+    if (booleanNegativeFields.includes(key.toLowerCase())) {
+      isNegativeCriterion = true;
+    } else {
+      // For other fields with !, it means strictly required to be present
+      result.disqualifyIfMissing = true;
+    }
   }
 
   key = key.trim().toLowerCase();
@@ -113,9 +125,19 @@ function evaluateCriterion(
     const inputKey = snakeToCamel(key);
     const val = (input as any)[inputKey];
 
-    result.met = val === true;
-    result.partialFactor = val ? 1 : 0;
-    result.reason = `${inputKey} is ${val ? "present" : "missing"}`;
+    if (isNegativeCriterion) {
+      // For negative criteria, we want the field to be FALSE
+      result.met = val === false || val === null || val === undefined;
+      result.partialFactor = result.met ? 1 : 0;
+      result.reason = `${inputKey} is ${
+        val ? "present (not desired)" : "absent (desired)"
+      }`;
+    } else {
+      // Normal positive criterion
+      result.met = val === true;
+      result.partialFactor = val ? 1 : 0;
+      result.reason = `${inputKey} is ${val ? "present" : "missing"}`;
+    }
 
     return result;
   }
@@ -349,44 +371,12 @@ function evaluateCriterion(
     return result;
   }
 
-  // ===== STUDY MODE CHECK (NEW) =====
-  if (key === "study_mode_fulltime") {
-    const mode = input.studyMode?.toLowerCase();
-    result.met = mode === "full-time";
-    result.partialFactor = result.met ? 1 : 0;
-    result.reason = `Study mode is ${mode ?? "unspecified"}`;
-
-    return result;
-  }
-
-  // ===== EMPLOYMENT STATUS (NEW) =====
-  if (key === "employment_status_employed") {
-    const status = input.employmentStatus?.toLowerCase();
-    result.met = status === "employed";
-    result.partialFactor = result.met ? 1 : 0;
-    result.reason = `Employment status is ${status ?? "unspecified"}`;
-
-    return result;
-  }
-
   // ===== PROOF OF FUNDS =====
   if (key === "proof_funds") {
     const val = input.proofFunds;
     result.met = val === true;
     result.partialFactor = val ? 1 : 0;
     result.reason = `Proof of funds is ${val ? "available" : "missing"}`;
-
-    return result;
-  }
-
-  // ===== BLOCKED ACCOUNT AMOUNT (NEW) =====
-  if (key === "blocked_account_sufficient") {
-    const amount = input.blockedAccountAmount ?? 0;
-    const required = 11904; // Minimum for student visa (1 year)
-
-    result.met = amount >= required;
-    result.partialFactor = amount > 0 ? Math.min(1, amount / required) : 0;
-    result.reason = `Blocked account €${amount} vs required €${required}`;
 
     return result;
   }
@@ -425,55 +415,20 @@ function evaluateCriterion(
     return result;
   }
 
-  // ===== CHILDREN CHECKS (NEW) =====
-  if (key === "has_children_under_18") {
-    if (input.hasChildren && input.childrenAges) {
-      const ages = input.childrenAges.split(",").map((a) => parseInt(a.trim()))
-        .filter((a) => !isNaN(a));
-      const hasMinor = ages.some((age) => age < 18);
-
-      result.met = hasMinor;
-      result.partialFactor = hasMinor ? 1 : 0;
-      result.reason = `Has children under 18: ${hasMinor}`;
-    } else {
-      result.met = false;
-      result.partialFactor = 0;
-      result.reason = "No children information";
-    }
-
-    return result;
-  }
-
-  // ===== BUSINESS PLAN (NEW) =====
-  if (key === "has_business_plan") {
-    const val = input.hasBusinessPlan;
-    result.met = val === true;
-    result.partialFactor = val ? 1 : 0;
-    result.reason = `Business plan is ${val ? "prepared" : "missing"}`;
-
-    return result;
-  }
-
-  // ===== TRAINING COMPENSATION (NEW) =====
-  if (key === "training_paid") {
-    const val = input.trainingCompensation;
-    result.met = val === true;
-    result.partialFactor = val ? 1 : 0;
-    result.reason = `Training compensation is ${
-      val ? "provided" : "not provided"
-    }`;
-
-    return result;
-  }
-
   // ===== GENERIC FALLBACK =====
   const inputKey = snakeToCamel(key);
   const val = (input as any)[inputKey];
 
   if (typeof val === "boolean") {
-    result.met = val === true;
-    result.partialFactor = val ? 1 : 0;
-    result.reason = `${inputKey} boolean is ${val}`;
+    if (isNegativeCriterion) {
+      result.met = val === false;
+      result.partialFactor = !val ? 1 : 0;
+      result.reason = `${inputKey} boolean is ${val} (should be false)`;
+    } else {
+      result.met = val === true;
+      result.partialFactor = val ? 1 : 0;
+      result.reason = `${inputKey} boolean is ${val}`;
+    }
     return result;
   }
 
@@ -505,13 +460,11 @@ export function computeScoreForVisa(
   let rawScore = rawBase;
 
   const matched: string[] = [];
-  const missing: Array<
-    {
-      key: string;
-      severity: "critical" | "important" | "optional";
-      detail?: string;
-    }
-  > = [];
+  const missing: Array<{
+    key: string;
+    severity: "critical" | "important" | "optional";
+    detail?: string;
+  }> = [];
   const reasons: string[] = [];
   let disqualify = false;
 
@@ -530,7 +483,7 @@ export function computeScoreForVisa(
     } else {
       const penaltyBase = evalRes.disqualifyIfMissing
         ? 100
-        : Math.max(6, Math.round(weight * 0.8));
+        : Math.max(5, Math.round(weight * 0.5));
       const penalty = penaltyBase;
 
       rawScore -= penalty;
@@ -568,10 +521,22 @@ export function computeScoreForVisa(
       );
 
       if (matchesCountry) {
-        rawScore += 5;
-        reasons.push(`✓ Visa-free nationality + in-country application: +5`);
+        rawScore += 10; // INCREASED from 5
+        reasons.push(`✓ Visa-free nationality + in-country application: +10`);
       }
     }
+  }
+
+  // Work visa + job offer bonus
+  if (category === "work" && input.hasJobOffer) {
+    rawScore += 20; // INCREASED from 15
+    reasons.push(`✓ Job offer present: +20`);
+  }
+
+  // Student visa + admission bonus
+  if (category === "education" && input.admitted) {
+    rawScore += 15; // INCREASED from 10
+    reasons.push(`✓ University admission: +15`);
   }
 
   // Research visa + host agreement bonus
@@ -579,33 +544,21 @@ export function computeScoreForVisa(
     (category === "specialized" || category === "research") &&
     input.hasHostAgreement
   ) {
-    rawScore += 15;
-    reasons.push(`✓ Host agreement present: +15`);
-  }
-
-  // Work visa + job offer bonus
-  if (category === "work" && input.hasJobOffer) {
-    rawScore += 15;
-    reasons.push(`✓ Job offer present: +15`);
-  }
-
-  // Student visa + admission bonus
-  if (category === "education" && input.admitted) {
-    rawScore += 10;
-    reasons.push(`✓ University admission: +10`);
+    rawScore += 20; // INCREASED from 15
+    reasons.push(`✓ Host agreement present: +20`);
   }
 
   // Family reunion + family in Germany bonus
   if (category === "personal" && input.hasFamilyInGermany) {
-    rawScore += 10;
-    reasons.push(`✓ Family in Germany: +10`);
+    rawScore += 15; // INCREASED from 10
+    reasons.push(`✓ Family in Germany: +15`);
   }
 
   // Working holiday eligibility bonus
   if (code === "working_holiday" && input.nationality) {
     if (isWorkingHolidayEligible(input.nationality)) {
-      rawScore += 20;
-      reasons.push(`✓ Working Holiday eligible nationality: +20`);
+      rawScore += 25; // INCREASED from 20
+      reasons.push(`✓ Working Holiday eligible nationality: +25`);
     }
   }
 
@@ -613,8 +566,11 @@ export function computeScoreForVisa(
   if (input.germanLevel) {
     const level = input.germanLevel.toUpperCase();
     if (["B2", "C1", "C2"].includes(level)) {
-      rawScore += 5;
-      reasons.push(`✓ High German proficiency (${level}): +5`);
+      rawScore += 10; // INCREASED from 5
+      reasons.push(`✓ High German proficiency (${level}): +10`);
+    } else if (["A2", "B1"].includes(level)) {
+      rawScore += 5; // NEW: bonus for basic German
+      reasons.push(`✓ Basic German proficiency (${level}): +5`);
     }
   }
 
@@ -622,8 +578,8 @@ export function computeScoreForVisa(
   if (
     category === "work" && isStemField(input.degreeField || input.profession)
   ) {
-    rawScore += 5;
-    reasons.push(`✓ STEM field (high demand): +5`);
+    rawScore += 10; // INCREASED from 5
+    reasons.push(`✓ STEM field (high demand): +10`);
   }
 
   // Normalize to 0-100 scale
@@ -661,7 +617,7 @@ export function evaluateAllVisas(
     // Add enhanced context for personalization
     candidate.context = {
       ...input,
-      age, // Computed age
+      age,
       nationality: input.nationality,
       salary: input.salary,
       degreeField: input.degreeField || "your field",
@@ -701,8 +657,8 @@ export function chooseUpToTwoAlternatives(
 ): VisaCandidate[] {
   const alts: VisaCandidate[] = [];
 
-  const available = candidates.filter(
-    (c) => !recommended || c.code !== recommended.code,
+  const available = candidates.filter((c) =>
+    !recommended || c.code !== recommended.code
   );
 
   if (available.length === 0) return [];
